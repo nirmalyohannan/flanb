@@ -7,19 +7,21 @@ const String embeddedWebHtml = '''
   <title>FLANB — Flutter LAN Build</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-main: #090d16;
-      --card-bg: rgba(15, 23, 42, 0.85);
-      --border-color: rgba(255, 255, 255, 0.08);
-      --text-main: #f8fafc;
-      --text-muted: #64748b;
+      --bg-main: #030712;
+      --appbar-bg: rgba(8, 12, 22, 0.92);
+      --border-color: rgba(255, 255, 255, 0.06);
+      --text-main: #f1f5f9;
+      --text-muted: #475569;
       --accent-blue: #38bdf8;
-      --accent-indigo: #818cf8;
-      --success-green: #22c55e;
-      --error-red: #ef4444;
+      --accent-violet: #a855f7;
+      --success-green: #10b981;
+      --error-red: #f43f5e;
       --warning-amber: #f59e0b;
+      --console-bg: #010308;
+      --toolbar-bg: #070c18;
     }
 
     * {
@@ -44,15 +46,15 @@ const String embeddedWebHtml = '''
       width: 100vw;
     }
 
-    /* Compact Floating Appbar */
+    /* Compact Floating Appbar - Super Dark Glassmorphism */
     .floating-appbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0.55rem 1.25rem;
-      background: var(--card-bg);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      padding: 0.5rem 1.25rem;
+      background: var(--appbar-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid var(--border-color);
       z-index: 100;
       gap: 0.75rem;
@@ -68,17 +70,17 @@ const String embeddedWebHtml = '''
     }
 
     .brand-logo {
-      width: 32px;
-      height: 32px;
-      background: linear-gradient(135deg, var(--accent-blue), var(--accent-indigo));
-      border-radius: 8px;
+      width: 30px;
+      height: 30px;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-violet));
+      border-radius: 7px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 700;
-      font-size: 1rem;
+      font-size: 0.95rem;
       color: #fff;
-      box-shadow: 0 2px 10px rgba(56, 189, 248, 0.3);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
     }
 
     .brand-text {
@@ -87,16 +89,16 @@ const String embeddedWebHtml = '''
     }
 
     .brand-title {
-      font-size: 1.15rem;
+      font-size: 1.1rem;
       font-weight: 700;
-      background: linear-gradient(90deg, #38bdf8, #818cf8);
+      background: linear-gradient(90deg, #38bdf8, #a855f7);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       line-height: 1.1;
     }
 
     .brand-watermark {
-      font-size: 0.68rem;
+      font-size: 0.65rem;
       color: var(--text-muted);
       font-weight: 500;
       letter-spacing: 0.03em;
@@ -113,58 +115,58 @@ const String embeddedWebHtml = '''
       display: inline-flex;
       align-items: center;
       gap: 0.3rem;
-      background: rgba(255, 255, 255, 0.04);
+      background: rgba(255, 255, 255, 0.02);
       border: 1px solid var(--border-color);
-      padding: 0.25rem 0.6rem;
+      padding: 0.2rem 0.55rem;
       border-radius: 6px;
-      font-size: 0.78rem;
+      font-size: 0.75rem;
     }
 
     .pill-label {
       color: var(--text-muted);
-      font-size: 0.68rem;
+      font-size: 0.65rem;
       text-transform: uppercase;
       font-weight: 600;
     }
 
     .pill-val {
       font-weight: 600;
-      color: #e2e8f0;
+      color: #cbd5e1;
     }
 
     .status-badge {
       display: inline-flex;
       align-items: center;
       gap: 0.4rem;
-      padding: 0.3rem 0.75rem;
+      padding: 0.28rem 0.7rem;
       border-radius: 20px;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
 
     .status-building {
-      background: rgba(245, 158, 11, 0.15);
+      background: rgba(245, 158, 11, 0.12);
       color: var(--warning-amber);
-      border: 1px solid rgba(245, 158, 11, 0.3);
+      border: 1px solid rgba(245, 158, 11, 0.25);
     }
 
     .status-success, .status-serving {
-      background: rgba(34, 197, 94, 0.15);
+      background: rgba(16, 185, 129, 0.12);
       color: var(--success-green);
-      border: 1px solid rgba(34, 197, 94, 0.3);
+      border: 1px solid rgba(16, 185, 129, 0.25);
     }
 
     .status-failed {
-      background: rgba(239, 68, 68, 0.15);
+      background: rgba(244, 63, 94, 0.12);
       color: var(--error-red);
-      border: 1px solid rgba(239, 68, 68, 0.3);
+      border: 1px solid rgba(244, 63, 94, 0.25);
     }
 
     .pulse-dot {
-      width: 7px;
-      height: 7px;
+      width: 6px;
+      height: 6px;
       border-radius: 50%;
       background: currentColor;
       animation: pulse 1.5s infinite ease-in-out;
@@ -177,9 +179,9 @@ const String embeddedWebHtml = '''
 
     /* Download Banner */
     .download-banner {
-      background: linear-gradient(90deg, rgba(34, 197, 94, 0.15), rgba(56, 189, 248, 0.15));
-      border-bottom: 1px solid rgba(34, 197, 94, 0.3);
-      padding: 0.5rem 1.25rem;
+      background: linear-gradient(90deg, rgba(16, 185, 129, 0.12), rgba(56, 189, 248, 0.12));
+      border-bottom: 1px solid rgba(16, 185, 129, 0.25);
+      padding: 0.45rem 1.25rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -188,43 +190,43 @@ const String embeddedWebHtml = '''
     }
 
     .download-title {
-      font-size: 0.88rem;
+      font-size: 0.85rem;
       font-weight: 600;
       color: #fff;
     }
 
     .download-sub {
-      font-size: 0.75rem;
-      color: #94a3b8;
+      font-size: 0.72rem;
+      color: #64748b;
     }
 
     .download-btn {
       display: inline-flex;
       align-items: center;
-      gap: 0.5rem;
-      background: linear-gradient(135deg, #22c55e, #16a34a);
+      gap: 0.45rem;
+      background: linear-gradient(135deg, #10b981, #059669);
       color: #ffffff;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       font-weight: 700;
-      padding: 0.4rem 1.1rem;
-      border-radius: 8px;
+      padding: 0.35rem 1rem;
+      border-radius: 7px;
       text-decoration: none;
-      box-shadow: 0 2px 12px rgba(34, 197, 94, 0.3);
+      box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);
       transition: all 0.2s ease;
       white-space: nowrap;
     }
 
     .download-btn:hover {
       transform: translateY(-1px);
-      box-shadow: 0 4px 16px rgba(34, 197, 94, 0.5);
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.5);
     }
 
-    /* Full Body Console */
+    /* Full Body Console — Super Dark */
     .console-container {
       flex: 1;
       display: flex;
       flex-direction: column;
-      background: #060911;
+      background: var(--console-bg);
       overflow: hidden;
     }
 
@@ -232,44 +234,63 @@ const String embeddedWebHtml = '''
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0.4rem 1.25rem;
-      background: #0f172a;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-      font-size: 0.75rem;
+      padding: 0.35rem 1.25rem;
+      background: var(--toolbar-bg);
+      border-bottom: 1px solid var(--border-color);
+      font-size: 0.72rem;
       color: var(--text-muted);
+      letter-spacing: 0.05em;
+      font-weight: 600;
     }
 
     .console-controls {
       display: flex;
-      gap: 0.5rem;
+      gap: 0.4rem;
     }
 
     .btn-small {
-      background: rgba(255, 255, 255, 0.06);
+      background: rgba(255, 255, 255, 0.03);
       border: 1px solid var(--border-color);
-      color: #94a3b8;
-      font-size: 0.72rem;
-      padding: 0.2rem 0.55rem;
-      border-radius: 5px;
+      color: #64748b;
+      font-size: 0.7rem;
+      padding: 0.18rem 0.5rem;
+      border-radius: 4px;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: all 0.2s;
     }
 
     .btn-small:hover {
-      background: rgba(255, 255, 255, 0.12);
-      color: #f8fafc;
+      background: rgba(255, 255, 255, 0.08);
+      color: #f1f5f9;
     }
 
     .console-body {
       flex: 1;
-      padding: 0.9rem 1.25rem;
+      padding: 0.85rem 1.25rem;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.83rem;
+      font-size: 0.82rem;
       line-height: 1.55;
-      color: #cbd5e1;
+      color: #94a3b8;
       overflow-y: auto;
       white-space: pre-wrap;
       word-break: break-all;
+    }
+
+    /* Blinking Thick Block Cursor */
+    .console-cursor {
+      display: inline-block;
+      width: 8px;
+      height: 1.15em;
+      background-color: var(--accent-blue);
+      vertical-align: text-bottom;
+      margin-left: 2px;
+      box-shadow: 0 0 6px rgba(56, 189, 248, 0.8);
+      animation: blink 1s step-end infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
     }
 
     .log-line-err { color: var(--error-red); }
@@ -277,10 +298,10 @@ const String embeddedWebHtml = '''
 
     @media (max-width: 768px) {
       .floating-appbar {
-        padding: 0.5rem 0.75rem;
+        padding: 0.4rem 0.65rem;
       }
       .meta-pills {
-        font-size: 0.72rem;
+        font-size: 0.7rem;
       }
       .download-banner {
         flex-direction: column;
@@ -337,12 +358,12 @@ const String embeddedWebHtml = '''
         <div id="apkMetadata" class="download-sub">Ready for installation on local Android devices</div>
       </div>
       <a id="downloadBtn" href="/download" class="download-btn">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Download APK
       </a>
     </div>
 
-    <!-- Full Body Console -->
+    <!-- Full Body Console with Blinking Cursor -->
     <main class="console-container">
       <div class="console-toolbar">
         <div>LIVE BUILD CONSOLE</div>
@@ -351,13 +372,16 @@ const String embeddedWebHtml = '''
           <button id="autoScrollBtn" class="btn-small">Auto-scroll: ON</button>
         </div>
       </div>
-      <div id="consoleBody" class="console-body"></div>
+      <div id="consoleBody" class="console-body">
+        <span id="logLines"></span><span class="console-cursor"></span>
+      </div>
     </main>
   </div>
 
   <script>
     let autoScroll = true;
     const consoleBody = document.getElementById('consoleBody');
+    const logLines = document.getElementById('logLines');
     const autoScrollBtn = document.getElementById('autoScrollBtn');
     const clearLogsBtn = document.getElementById('clearLogsBtn');
     const downloadBanner = document.getElementById('downloadBanner');
@@ -372,7 +396,7 @@ const String embeddedWebHtml = '''
     });
 
     clearLogsBtn.addEventListener('click', () => {
-      consoleBody.textContent = '';
+      logLines.textContent = '';
       receivedLogs.clear();
     });
 
@@ -388,7 +412,7 @@ const String embeddedWebHtml = '''
         line.className = 'log-line-success';
       }
       line.textContent = text;
-      consoleBody.appendChild(line);
+      logLines.appendChild(line);
       if (autoScroll) {
         consoleBody.scrollTop = consoleBody.scrollHeight;
       }
