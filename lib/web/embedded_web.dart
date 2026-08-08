@@ -245,6 +245,7 @@ const String embeddedWebHtml = '''
 
     .console-controls {
       display: flex;
+      align-items: center;
       gap: 0.4rem;
     }
 
@@ -368,6 +369,7 @@ const String embeddedWebHtml = '''
       <div class="console-toolbar">
         <div>LIVE BUILD CONSOLE</div>
         <div class="console-controls">
+          <button id="notifyBtn" class="btn-small">🔔 Enable Notifications</button>
           <button id="clearLogsBtn" class="btn-small">Clear</button>
           <button id="autoScrollBtn" class="btn-small">Auto-scroll: ON</button>
         </div>
@@ -380,10 +382,14 @@ const String embeddedWebHtml = '''
 
   <script>
     let autoScroll = true;
+    let previousStatus = null;
+    let notificationPermissionRequested = false;
+
     const consoleBody = document.getElementById('consoleBody');
     const logLines = document.getElementById('logLines');
     const autoScrollBtn = document.getElementById('autoScrollBtn');
     const clearLogsBtn = document.getElementById('clearLogsBtn');
+    const notifyBtn = document.getElementById('notifyBtn');
     const downloadBanner = document.getElementById('downloadBanner');
     const statusBadge = document.getElementById('statusBadge');
     const statusText = document.getElementById('statusText');
@@ -399,6 +405,39 @@ const String embeddedWebHtml = '''
       logLines.textContent = '';
       receivedLogs.clear();
     });
+
+    function updateNotifyBtn() {
+      if (!('Notification' in window)) {
+        notifyBtn.style.display = 'none';
+        return;
+      }
+      if (Notification.permission === 'granted') {
+        notifyBtn.textContent = '🔔 Notifications Enabled';
+        notifyBtn.style.color = '#10b981';
+      } else if (Notification.permission === 'denied') {
+        notifyBtn.textContent = '🔕 Notifications Blocked';
+        notifyBtn.style.color = '#f43f5e';
+      } else {
+        notifyBtn.textContent = '🔔 Enable Notifications';
+      }
+    }
+
+    notifyBtn.addEventListener('click', async () => {
+      if ('Notification' in window && Notification.permission !== 'granted') {
+        await Notification.requestPermission();
+        updateNotifyBtn();
+      }
+    });
+
+    function sendWebNotification(title, options) {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        try {
+          new Notification(title, options);
+        } catch (e) {
+          console.warn('Failed to trigger web notification:', e);
+        }
+      }
+    }
 
     function appendLog(text) {
       if (!text) return;
@@ -425,13 +464,39 @@ const String embeddedWebHtml = '''
       if (data.entryPoint) document.getElementById('metaEntry').textContent = data.entryPoint;
       if (data.mode) document.getElementById('metaMode').textContent = data.mode.toUpperCase();
 
-      const status = (data.status || '').toLowerCase();
+      const currentStatus = (data.status || '').toLowerCase();
+
+      // Trigger Web Notification on Status Transition
+      if (previousStatus && previousStatus !== currentStatus) {
+        const projectName = data.projectName || 'Flutter Project';
+        const projectVersion = data.projectVersion ? ` (\${data.projectVersion})` : '';
+
+        if (currentStatus === 'success' || currentStatus === 'serving') {
+          sendWebNotification(`✓ Build Successful — \${projectName}\${projectVersion}`, {
+            body: 'APK build finished cleanly and is ready for LAN download!',
+            tag: 'flanb-build-notification'
+          });
+        } else if (currentStatus === 'failed') {
+          sendWebNotification(`✗ Build Failed — \${projectName}\${projectVersion}`, {
+            body: 'Flutter build failed. Check live console logs for details.',
+            tag: 'flanb-build-notification'
+          });
+        }
+      }
+
+      // Auto-prompt once if building
+      if (currentStatus === 'building' && 'Notification' in window && Notification.permission === 'default' && !notificationPermissionRequested) {
+        notificationPermissionRequested = true;
+        Notification.requestPermission().then(updateNotifyBtn);
+      }
+
+      previousStatus = currentStatus;
 
       statusBadge.className = 'status-badge ';
-      if (status === 'building') {
+      if (currentStatus === 'building') {
         statusBadge.classList.add('status-building');
         statusText.textContent = 'Building...';
-      } else if (status === 'success' || status === 'serving') {
+      } else if (currentStatus === 'success' || currentStatus === 'serving') {
         statusBadge.classList.add('status-success');
         statusText.textContent = 'Ready';
         if (data.apkAvailable) {
@@ -439,12 +504,12 @@ const String embeddedWebHtml = '''
           const sizeMB = data.apkSize ? (data.apkSize / (1024 * 1024)).toFixed(1) + ' MB' : '';
           document.getElementById('apkMetadata').textContent = `File: \${data.apkName || 'app.apk'} \${sizeMB ? '• ' + sizeMB : ''}`;
         }
-      } else if (status === 'failed') {
+      } else if (currentStatus === 'failed') {
         statusBadge.classList.add('status-failed');
         statusText.textContent = 'Build Failed';
       } else {
         statusBadge.classList.add('status-building');
-        statusText.textContent = status;
+        statusText.textContent = currentStatus;
       }
     }
 
@@ -485,6 +550,7 @@ const String embeddedWebHtml = '''
     }
 
     // Initialize
+    updateNotifyBtn();
     fetchLogHistory();
     connectSse();
     fetchStatus();
