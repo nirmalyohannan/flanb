@@ -1,6 +1,8 @@
 name: flanb
-description: Build Flutter APKs and share them over your local network.
+description: A cross-platform Dart CLI tool to build Flutter Android APKs and serve them over your local network (LAN) for quick device testing.
 version: 0.1.0
+repository: https://github.com/nirmalyohannan/flanb
+homepage: https://github.com/nirmalyohannan/flanb
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
