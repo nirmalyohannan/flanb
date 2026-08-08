@@ -16,7 +16,7 @@ import 'package:flanb/server/log_stream.dart';
 import 'package:flanb/server/network.dart';
 import 'package:flanb/server/server.dart';
 
-const String version = '0.1.0';
+const String version = '0.2.0';
 
 ArgParser buildParser() {
   return ArgParser()
