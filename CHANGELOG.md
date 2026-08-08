@@ -1,5 +1,6 @@
 ## 0.2.0
 
+- Added native Web Notifications API integration on build **Success** (`✓ Build Successful`) or **Failure** (`✗ Build Failed`).
 - Added interactive arrow key (**↑/↓**) menu selection with instant visual cursor (`❯`).
 - Added Super Dark color scheme for the web dashboard.
 - Added glowing blinking thick console cursor at the active log line end.
