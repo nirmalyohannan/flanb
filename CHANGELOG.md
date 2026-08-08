@@ -1,4 +1,4 @@
-## 0.2.0
+## 0.2.1
 
 - Added native Web Notifications API integration on build **Success** (`✓ Build Successful`) or **Failure** (`✗ Build Failed`).
 - Added interactive arrow key (**↑/↓**) menu selection with instant visual cursor (`❯`).
