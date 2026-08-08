@@ -7,23 +7,19 @@ const String embeddedWebHtml = '''
   <title>FLANB — Flutter LAN Build</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
-      --card-bg: rgba(30, 41, 59, 0.7);
-      --card-border: rgba(255, 255, 255, 0.1);
+      --bg-main: #090d16;
+      --card-bg: rgba(15, 23, 42, 0.85);
+      --border-color: rgba(255, 255, 255, 0.08);
       --text-main: #f8fafc;
-      --text-muted: #94a3b8;
+      --text-muted: #64748b;
       --accent-blue: #38bdf8;
-      --accent-indigo: #6366f1;
+      --accent-indigo: #818cf8;
       --success-green: #22c55e;
-      --success-bg: rgba(34, 197, 94, 0.15);
       --error-red: #ef4444;
-      --error-bg: rgba(239, 68, 68, 0.15);
       --warning-amber: #f59e0b;
-      --warning-bg: rgba(245, 158, 11, 0.15);
-      --code-bg: #090d16;
     }
 
     * {
@@ -32,108 +28,143 @@ const String embeddedWebHtml = '''
       padding: 0;
     }
 
-    body {
-      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--bg-gradient);
-      color: var(--text-main);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 2rem 1rem;
-    }
-
-    .container {
+    html, body {
+      height: 100%;
       width: 100%;
-      max-width: 860px;
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
+      overflow: hidden;
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-main);
+      color: var(--text-main);
     }
 
-    header {
+    .app-viewport {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* Compact Floating Appbar */
+    .floating-appbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 1rem 1.5rem;
+      padding: 0.55rem 1.25rem;
       background: var(--card-bg);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-color);
+      z-index: 100;
+      gap: 0.75rem;
+      flex-shrink: 0;
+      flex-wrap: wrap;
     }
 
     .brand {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.6rem;
+      flex-shrink: 0;
     }
 
     .brand-logo {
-      width: 38px;
-      height: 38px;
+      width: 32px;
+      height: 32px;
       background: linear-gradient(135deg, var(--accent-blue), var(--accent-indigo));
-      border-radius: 10px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 700;
-      font-size: 1.2rem;
+      font-size: 1rem;
       color: #fff;
-      box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
+      box-shadow: 0 2px 10px rgba(56, 189, 248, 0.3);
+    }
+
+    .brand-text {
+      display: flex;
+      flex-direction: column;
     }
 
     .brand-title {
-      font-size: 1.4rem;
+      font-size: 1.15rem;
       font-weight: 700;
-      letter-spacing: -0.02em;
       background: linear-gradient(90deg, #38bdf8, #818cf8);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+      line-height: 1.1;
     }
 
-    .brand-subtitle {
-      font-size: 0.75rem;
+    .brand-watermark {
+      font-size: 0.68rem;
       color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
       font-weight: 500;
+      letter-spacing: 0.03em;
+    }
+
+    .meta-pills {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-color);
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.78rem;
+    }
+
+    .pill-label {
+      color: var(--text-muted);
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .pill-val {
+      font-weight: 600;
+      color: #e2e8f0;
     }
 
     .status-badge {
       display: inline-flex;
       align-items: center;
-      gap: 0.5rem;
-      padding: 0.4rem 0.9rem;
+      gap: 0.4rem;
+      padding: 0.3rem 0.75rem;
       border-radius: 20px;
-      font-size: 0.85rem;
-      font-weight: 600;
+      font-size: 0.75rem;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
 
     .status-building {
-      background: var(--warning-bg);
+      background: rgba(245, 158, 11, 0.15);
       color: var(--warning-amber);
       border: 1px solid rgba(245, 158, 11, 0.3);
     }
 
     .status-success, .status-serving {
-      background: var(--success-bg);
+      background: rgba(34, 197, 94, 0.15);
       color: var(--success-green);
       border: 1px solid rgba(34, 197, 94, 0.3);
     }
 
     .status-failed {
-      background: var(--error-bg);
+      background: rgba(239, 68, 68, 0.15);
       color: var(--error-red);
       border: 1px solid rgba(239, 68, 68, 0.3);
     }
 
     .pulse-dot {
-      width: 8px;
-      height: 8px;
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
       background: currentColor;
       animation: pulse 1.5s infinite ease-in-out;
@@ -144,93 +175,68 @@ const String embeddedWebHtml = '''
       50% { opacity: 1; transform: scale(1.2); }
     }
 
-    .card {
-      background: var(--card-bg);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
-      padding: 1.5rem;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    }
-
-    .meta-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 1rem;
-    }
-
-    .meta-item {
+    /* Download Banner */
+    .download-banner {
+      background: linear-gradient(90deg, rgba(34, 197, 94, 0.15), rgba(56, 189, 248, 0.15));
+      border-bottom: 1px solid rgba(34, 197, 94, 0.3);
+      padding: 0.5rem 1.25rem;
       display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-    }
-
-    .meta-label {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .meta-value {
-      font-size: 1rem;
-      font-weight: 600;
-      color: var(--text-main);
-      word-break: break-all;
-    }
-
-    .download-card {
-      background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(56, 189, 248, 0.1));
-      border: 1px solid rgba(34, 197, 94, 0.3);
-      display: flex;
-      flex-direction: column;
       align-items: center;
-      justify-content: center;
-      text-align: center;
+      justify-content: space-between;
       gap: 1rem;
-      padding: 2rem 1.5rem;
+      flex-shrink: 0;
+    }
+
+    .download-title {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .download-sub {
+      font-size: 0.75rem;
+      color: #94a3b8;
     }
 
     .download-btn {
       display: inline-flex;
       align-items: center;
-      justify-content: center;
-      gap: 0.75rem;
+      gap: 0.5rem;
       background: linear-gradient(135deg, #22c55e, #16a34a);
       color: #ffffff;
-      font-size: 1.1rem;
+      font-size: 0.85rem;
       font-weight: 700;
-      padding: 0.9rem 2rem;
-      border-radius: 12px;
+      padding: 0.4rem 1.1rem;
+      border-radius: 8px;
       text-decoration: none;
-      box-shadow: 0 4px 20px rgba(34, 197, 94, 0.4);
+      box-shadow: 0 2px 12px rgba(34, 197, 94, 0.3);
       transition: all 0.2s ease;
+      white-space: nowrap;
     }
 
     .download-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 25px rgba(34, 197, 94, 0.6);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(34, 197, 94, 0.5);
     }
 
-    .console-card {
+    /* Full Body Console */
+    .console-container {
+      flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
+      background: #060911;
+      overflow: hidden;
     }
 
-    .console-header {
+    .console-toolbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-    }
-
-    .console-title {
-      font-size: 0.9rem;
-      font-weight: 600;
+      padding: 0.4rem 1.25rem;
+      background: #0f172a;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.75rem;
       color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
     }
 
     .console-controls {
@@ -239,135 +245,125 @@ const String embeddedWebHtml = '''
     }
 
     .btn-small {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid var(--card-border);
-      color: var(--text-muted);
-      font-size: 0.75rem;
-      padding: 0.25rem 0.6rem;
-      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-color);
+      color: #94a3b8;
+      font-size: 0.72rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 5px;
       cursor: pointer;
       transition: background 0.2s;
     }
 
     .btn-small:hover {
-      background: rgba(255, 255, 255, 0.15);
-      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.12);
+      color: #f8fafc;
     }
 
-    .console-output {
-      background: var(--code-bg);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: 10px;
-      padding: 1rem;
+    .console-body {
+      flex: 1;
+      padding: 0.9rem 1.25rem;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.82rem;
-      line-height: 1.5;
+      font-size: 0.83rem;
+      line-height: 1.55;
       color: #cbd5e1;
-      height: 380px;
       overflow-y: auto;
       white-space: pre-wrap;
       word-break: break-all;
     }
 
-    .log-line-err {
-      color: var(--error-red);
-    }
+    .log-line-err { color: var(--error-red); }
+    .log-line-success { color: var(--success-green); }
 
-    .log-line-success {
-      color: var(--success-green);
-    }
-
-    footer {
-      text-align: center;
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      margin-top: 1rem;
-    }
-
-    @media (max-width: 600px) {
-      header {
+    @media (max-width: 768px) {
+      .floating-appbar {
+        padding: 0.5rem 0.75rem;
+      }
+      .meta-pills {
+        font-size: 0.72rem;
+      }
+      .download-banner {
         flex-direction: column;
         align-items: flex-start;
-        gap: 0.75rem;
-      }
-      .status-badge {
-        align-self: flex-start;
       }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
+  <div class="app-viewport">
+    <!-- Compact Floating Appbar -->
+    <header class="floating-appbar">
       <div class="brand">
         <div class="brand-logo">⚡</div>
-        <div>
+        <div class="brand-text">
           <div class="brand-title">FLANB</div>
-          <div class="brand-subtitle">Flutter LAN Build</div>
+          <div class="brand-watermark">by Nirmal Yohannan</div>
         </div>
       </div>
+
+      <div class="meta-pills">
+        <div class="pill">
+          <span class="pill-label">Project</span>
+          <span id="metaProject" class="pill-val">-</span>
+        </div>
+        <div class="pill">
+          <span class="pill-label">Version</span>
+          <span id="metaVersion" class="pill-val">-</span>
+        </div>
+        <div class="pill">
+          <span class="pill-label">Flavor</span>
+          <span id="metaFlavor" class="pill-val">default</span>
+        </div>
+        <div class="pill">
+          <span class="pill-label">Entry</span>
+          <span id="metaEntry" class="pill-val">lib/main.dart</span>
+        </div>
+        <div class="pill">
+          <span class="pill-label">Mode</span>
+          <span id="metaMode" class="pill-val">RELEASE</span>
+        </div>
+      </div>
+
       <div id="statusBadge" class="status-badge status-building">
         <div class="pulse-dot"></div>
         <span id="statusText">Initialising...</span>
       </div>
     </header>
 
-    <div class="card">
-      <div class="meta-grid">
-        <div class="meta-item">
-          <div class="meta-label">Project</div>
-          <div id="metaProject" class="meta-value">-</div>
-        </div>
-        <div class="meta-item">
-          <div class="meta-label">Flavor</div>
-          <div id="metaFlavor" class="meta-value">Default</div>
-        </div>
-        <div class="meta-item">
-          <div class="meta-label">Entry Point</div>
-          <div id="metaEntry" class="meta-value">lib/main.dart</div>
-        </div>
-        <div class="meta-item">
-          <div class="meta-label">Build Mode</div>
-          <div id="metaMode" class="meta-value">Release</div>
-        </div>
+    <!-- Download Banner (visible when build succeeds) -->
+    <div id="downloadBanner" class="download-banner" style="display: none;">
+      <div>
+        <div class="download-title">Build Completed Successfully</div>
+        <div id="apkMetadata" class="download-sub">Ready for installation on local Android devices</div>
       </div>
-    </div>
-
-    <div id="downloadCard" class="card download-card" style="display: none;">
-      <h2 style="font-size: 1.4rem; font-weight: 700; color: #fff;">Build Completed Successfully</h2>
-      <p id="apkMetadata" style="color: var(--text-muted); font-size: 0.9rem;">Ready for installation on local Android devices</p>
       <a id="downloadBtn" href="/download" class="download-btn">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Download APK
       </a>
     </div>
 
-    <div class="card console-card">
-      <div class="console-header">
-        <div class="console-title">Live Build Logs</div>
+    <!-- Full Body Console -->
+    <main class="console-container">
+      <div class="console-toolbar">
+        <div>LIVE BUILD CONSOLE</div>
         <div class="console-controls">
           <button id="clearLogsBtn" class="btn-small">Clear</button>
           <button id="autoScrollBtn" class="btn-small">Auto-scroll: ON</button>
         </div>
       </div>
-      <div id="consoleOutput" class="console-output"></div>
-    </div>
-
-    <footer>
-      FLANB — Local Network Build & Distribution Server
-    </footer>
+      <div id="consoleBody" class="console-body"></div>
+    </main>
   </div>
 
   <script>
     let autoScroll = true;
-    const consoleOutput = document.getElementById('consoleOutput');
+    const consoleBody = document.getElementById('consoleBody');
     const autoScrollBtn = document.getElementById('autoScrollBtn');
     const clearLogsBtn = document.getElementById('clearLogsBtn');
-    const downloadCard = document.getElementById('downloadCard');
+    const downloadBanner = document.getElementById('downloadBanner');
     const statusBadge = document.getElementById('statusBadge');
     const statusText = document.getElementById('statusText');
 
-    const logCount = 0;
     const receivedLogs = new Set();
 
     autoScrollBtn.addEventListener('click', () => {
@@ -376,7 +372,7 @@ const String embeddedWebHtml = '''
     });
 
     clearLogsBtn.addEventListener('click', () => {
-      consoleOutput.textContent = '';
+      consoleBody.textContent = '';
       receivedLogs.clear();
     });
 
@@ -392,14 +388,15 @@ const String embeddedWebHtml = '''
         line.className = 'log-line-success';
       }
       line.textContent = text;
-      consoleOutput.appendChild(line);
+      consoleBody.appendChild(line);
       if (autoScroll) {
-        consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        consoleBody.scrollTop = consoleBody.scrollHeight;
       }
     }
 
     function updateStatus(data) {
       if (data.projectName) document.getElementById('metaProject').textContent = data.projectName;
+      if (data.projectVersion) document.getElementById('metaVersion').textContent = data.projectVersion;
       if (data.flavor) document.getElementById('metaFlavor').textContent = data.flavor;
       if (data.entryPoint) document.getElementById('metaEntry').textContent = data.entryPoint;
       if (data.mode) document.getElementById('metaMode').textContent = data.mode.toUpperCase();
@@ -414,7 +411,7 @@ const String embeddedWebHtml = '''
         statusBadge.classList.add('status-success');
         statusText.textContent = 'Ready';
         if (data.apkAvailable) {
-          downloadCard.style.display = 'flex';
+          downloadBanner.style.display = 'flex';
           const sizeMB = data.apkSize ? (data.apkSize / (1024 * 1024)).toFixed(1) + ' MB' : '';
           document.getElementById('apkMetadata').textContent = `File: \${data.apkName || 'app.apk'} \${sizeMB ? '• ' + sizeMB : ''}`;
         }
@@ -449,9 +446,6 @@ const String embeddedWebHtml = '''
         if (event.data) {
           appendLog(event.data);
         }
-      };
-      eventSource.onerror = (e) => {
-        console.warn('SSE stream reconnecting...');
       };
     }
 

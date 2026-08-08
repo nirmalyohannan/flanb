@@ -1,4 +1,3 @@
-
 class CliOutput {
   // ANSI Color escape codes
   static const String reset = '\x1B[0m';
@@ -15,6 +14,7 @@ class CliOutput {
     print('$cyan$bold╭────────────────────────────────────╮$reset');
     print('$cyan$bold│              FLANB                 │$reset');
     print('$cyan$bold│       Flutter LAN Build            │$reset');
+    print('$cyan$bold│        by Nirmal Yohannan          │$reset');
     print('$cyan$bold╰────────────────────────────────────╯$reset');
     print('');
   }

@@ -13,8 +13,13 @@ class FlutterProjectValidationException implements Exception {
 class FlutterProject {
   final String rootPath;
   final String name;
+  final String version;
 
-  FlutterProject._({required this.rootPath, required this.name});
+  FlutterProject._({
+    required this.rootPath,
+    required this.name,
+    required this.version,
+  });
 
   /// Validates and returns a [FlutterProject] instance for the given directory.
   /// Throws [FlutterProjectValidationException] if validation fails.
@@ -60,6 +65,7 @@ class FlutterProject {
       }
 
       final projectName = yaml['name']?.toString() ?? p.basename(rootPath);
+      final projectVersion = yaml['version']?.toString() ?? '1.0.0';
       final dependencies = yaml['dependencies'];
 
       bool hasFlutterDependency = false;
@@ -75,7 +81,11 @@ class FlutterProject {
         );
       }
 
-      return FlutterProject._(rootPath: rootPath, name: projectName);
+      return FlutterProject._(
+        rootPath: rootPath,
+        name: projectName,
+        version: projectVersion,
+      );
     } catch (e) {
       if (e is FlutterProjectValidationException) rethrow;
       throw FlutterProjectValidationException(

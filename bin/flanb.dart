@@ -149,6 +149,7 @@ Future<void> main(List<String> arguments) async {
 
   print('\n${CliOutput.bold}Build Configuration:${CliOutput.reset}');
   print('  Project:    ${project.name}');
+  print('  Version:    ${project.version}');
   print('  Flavor:     ${config.flavor ?? 'default (none)'}');
   print('  Entrypoint: ${config.entryPoint}');
   print('  Mode:       ${config.mode.name}\n');
@@ -165,6 +166,7 @@ Future<void> main(List<String> arguments) async {
   final port = int.tryParse(results['port'] as String) ?? 8080;
   final server = LanServer(
     projectName: project.name,
+    projectVersion: project.version,
     buildConfig: config,
     buildManager: buildManager,
     logManager: logManager,

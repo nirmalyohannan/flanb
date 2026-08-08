@@ -10,6 +10,7 @@ import 'log_stream.dart';
 
 class FlanbRoutes {
   final String projectName;
+  final String projectVersion;
   final BuildConfig buildConfig;
   final BuildManager buildManager;
   final LogManager logManager;
@@ -17,6 +18,7 @@ class FlanbRoutes {
 
   FlanbRoutes({
     required this.projectName,
+    required this.projectVersion,
     required this.buildConfig,
     required this.buildManager,
     required this.logManager,
@@ -42,6 +44,7 @@ class FlanbRoutes {
       final data = {
         'status': buildManager.status.name,
         'projectName': projectName,
+        'projectVersion': projectVersion,
         'flavor': buildConfig.flavor ?? 'default',
         'entryPoint': buildConfig.entryPoint,
         'mode': buildConfig.mode.name,

@@ -9,6 +9,7 @@ import 'routes.dart';
 
 class LanServer {
   final String projectName;
+  final String projectVersion;
   final BuildConfig buildConfig;
   final BuildManager buildManager;
   final LogManager logManager;
@@ -20,6 +21,7 @@ class LanServer {
 
   LanServer({
     required this.projectName,
+    required this.projectVersion,
     required this.buildConfig,
     required this.buildManager,
     required this.logManager,
@@ -35,6 +37,7 @@ class LanServer {
 
     final routes = FlanbRoutes(
       projectName: projectName,
+      projectVersion: projectVersion,
       buildConfig: buildConfig,
       buildManager: buildManager,
       logManager: logManager,
