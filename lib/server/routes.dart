@@ -56,14 +56,23 @@ class FlanbRoutes {
       );
     });
 
-    // Serve SSE live build log stream
+    // Serve all historical logs in JSON format
+    app.get('/api/logs', (Request request) {
+      return Response.ok(
+        jsonEncode(logManager.history),
+        headers: {'content-type': 'application/json; charset=utf-8'},
+      );
+    });
+
+    // Serve SSE live build log stream (Stream<List<int>>)
     app.get('/logs', (Request request) {
       return Response.ok(
-        logManager.sseStream,
+        logManager.sseByteStream,
         headers: {
           'content-type': 'text/event-stream; charset=utf-8',
-          'cache-control': 'no-cache',
+          'cache-control': 'no-cache, no-transform',
           'connection': 'keep-alive',
+          'x-accel-buffering': 'no',
         },
       );
     });

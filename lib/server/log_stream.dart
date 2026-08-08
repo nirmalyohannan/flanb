@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 class LogManager {
   final List<String> _history = [];
@@ -11,14 +12,30 @@ class LogManager {
     _controller.add(message);
   }
 
-  /// Returns a stream formatted for Server-Sent Events (SSE).
-  Stream<String> get sseStream async* {
+  /// Returns a byte stream (`Stream<List<int>>`) properly formatted for Server-Sent Events (SSE).
+  Stream<List<int>> get sseByteStream async* {
     // Send existing history first
     for (final line in _history) {
-      yield 'data: $line\n\n';
+      yield utf8.encode(_formatSseData(line));
     }
-    // Stream new logs
-    yield* _controller.stream.map((line) => 'data: $line\n\n');
+
+    // Stream incoming logs as byte chunks
+    await for (final line in _controller.stream) {
+      yield utf8.encode(_formatSseData(line));
+    }
+  }
+
+  /// Formats a log line into valid SSE protocol data format.
+  String _formatSseData(String line) {
+    // Replace newlines inside a single line to prevent breaking SSE field boundaries
+    final sanitized = line.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
+    final sublines = sanitized.split('\n');
+    final buffer = StringBuffer();
+    for (final sub in sublines) {
+      buffer.write('data: $sub\n');
+    }
+    buffer.write('\n');
+    return buffer.toString();
   }
 
   void dispose() {

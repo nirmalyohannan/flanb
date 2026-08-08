@@ -350,7 +350,7 @@ const String embeddedWebHtml = '''
           <button id="autoScrollBtn" class="btn-small">Auto-scroll: ON</button>
         </div>
       </div>
-      <div id="consoleOutput" class="console-output">Connecting to build log stream...\n</div>
+      <div id="consoleOutput" class="console-output"></div>
     </div>
 
     <footer>
@@ -367,6 +367,9 @@ const String embeddedWebHtml = '''
     const statusBadge = document.getElementById('statusBadge');
     const statusText = document.getElementById('statusText');
 
+    const logCount = 0;
+    const receivedLogs = new Set();
+
     autoScrollBtn.addEventListener('click', () => {
       autoScroll = !autoScroll;
       autoScrollBtn.textContent = `Auto-scroll: \${autoScroll ? 'ON' : 'OFF'}`;
@@ -374,13 +377,18 @@ const String embeddedWebHtml = '''
 
     clearLogsBtn.addEventListener('click', () => {
       consoleOutput.textContent = '';
+      receivedLogs.clear();
     });
 
     function appendLog(text) {
+      if (!text) return;
+      if (receivedLogs.has(text)) return;
+      receivedLogs.add(text);
+
       const line = document.createElement('div');
-      if (text.startsWith('[ERR]')) {
+      if (text.startsWith('[ERR]') || text.toLowerCase().includes('failed') || text.toLowerCase().includes('error')) {
         line.className = 'log-line-err';
-      } else if (text.includes('✓') || text.includes('SUCCESS')) {
+      } else if (text.includes('✓') || text.includes('SUCCESS') || text.includes('finished successfully')) {
         line.className = 'log-line-success';
       }
       line.textContent = text;
@@ -419,16 +427,35 @@ const String embeddedWebHtml = '''
       }
     }
 
-    // Connect Server-Sent Events (SSE) for build logs
-    const eventSource = new EventSource('/logs');
-    eventSource.onopen = () => {
-      consoleOutput.textContent = '';
-    };
-    eventSource.onmessage = (event) => {
-      appendLog(event.data);
-    };
+    // 1. Fetch initial log history via REST API
+    async function fetchLogHistory() {
+      try {
+        const res = await fetch('/api/logs');
+        if (res.ok) {
+          const logs = await res.json();
+          if (Array.isArray(logs)) {
+            logs.forEach(appendLog);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to fetch log history:', e);
+      }
+    }
 
-    // Poll status periodically
+    // 2. Connect Server-Sent Events (SSE) for live stream
+    function connectSse() {
+      const eventSource = new EventSource('/logs');
+      eventSource.onmessage = (event) => {
+        if (event.data) {
+          appendLog(event.data);
+        }
+      };
+      eventSource.onerror = (e) => {
+        console.warn('SSE stream reconnecting...');
+      };
+    }
+
+    // 3. Poll status periodically
     async function fetchStatus() {
       try {
         const res = await fetch('/status');
@@ -439,8 +466,12 @@ const String embeddedWebHtml = '''
       } catch (e) {}
     }
 
+    // Initialize
+    fetchLogHistory();
+    connectSse();
     fetchStatus();
-    setInterval(fetchStatus, 3000);
+    setInterval(fetchStatus, 2000);
+    setInterval(fetchLogHistory, 4000);
   </script>
 </body>
 </html>
