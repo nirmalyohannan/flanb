@@ -1,9 +1,11 @@
 ## 0.2.0
 
+- Added interactive arrow key (**↑/↓**) menu selection with instant visual cursor (`❯`).
 - Added Super Dark color scheme for the web dashboard.
 - Added glowing blinking thick console cursor at the active log line end.
 - Added project version extraction and display pill badge.
 - Redesigned web UI with compact floating glassmorphic appbar and full-body 100vh console layout.
+- Added author watermark (`Nirmal Yohannan`) in CLI banner and web header.
 - Fixed SSE byte stream output and added REST log fallback API (`GET /api/logs`).
 
 ## 0.1.0
