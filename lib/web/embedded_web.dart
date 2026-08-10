@@ -410,6 +410,10 @@ const String embeddedWebHtml = '''
           <span class="pill-label">Mode</span>
           <span id="metaMode" class="pill-val">RELEASE</span>
         </div>
+        <div id="tunnelPill" class="pill" style="display: none; border-color: rgba(56, 189, 248, 0.3);">
+          <span class="pill-label" style="color: var(--accent-blue);">Tunnel</span>
+          <span id="metaTunnel" class="pill-val" style="color: var(--accent-blue);">Active</span>
+        </div>
       </div>
 
       <div id="statusBadge" class="status-badge status-building">
@@ -446,7 +450,7 @@ const String embeddedWebHtml = '''
         <div class="qr-image-container">
           <img id="qrImage" src="/qr" alt="Download APK QR Code" />
         </div>
-        <div style="font-size: 0.72rem; color: #64748b; text-align: center;">Scan with your mobile camera connected to the same Wi-Fi</div>
+        <div style="font-size: 0.72rem; color: #64748b; text-align: center;">Scan with your mobile camera to download the APK</div>
       </div>
     </div>
 
@@ -566,6 +570,12 @@ const String embeddedWebHtml = '''
       if (data.entryPoint) document.getElementById('metaEntry').textContent = data.entryPoint;
       if (data.mode) document.getElementById('metaMode').textContent = data.mode.toUpperCase();
 
+      if (data.tunnelUrl) {
+        document.getElementById('tunnelPill').style.display = 'inline-flex';
+      } else {
+        document.getElementById('tunnelPill').style.display = 'none';
+      }
+
       const currentStatus = (data.status || '').toLowerCase();
 
       // Trigger Web Notification on Status Transition
@@ -575,7 +585,7 @@ const String embeddedWebHtml = '''
 
         if (currentStatus === 'success' || currentStatus === 'serving') {
           sendWebNotification(`✓ Build Successful — \${projectName}\${projectVersion}`, {
-            body: 'APK build finished cleanly and is ready for LAN download!',
+            body: 'APK build finished cleanly and is ready for download!',
             tag: 'flanb-build-notification'
           });
         } else if (currentStatus === 'failed') {

@@ -15,6 +15,7 @@ class LanServer {
   final LogManager logManager;
   final File? Function() getApkFile;
   final int requestedPort;
+  String? tunnelUrl;
 
   HttpServer? _server;
   int? _actualPort;
@@ -27,6 +28,7 @@ class LanServer {
     required this.logManager,
     required this.getApkFile,
     this.requestedPort = 8080,
+    this.tunnelUrl,
   });
 
   int get port => _actualPort ?? requestedPort;
@@ -42,6 +44,7 @@ class LanServer {
       buildManager: buildManager,
       logManager: logManager,
       getApkFile: getApkFile,
+      tunnelUrl: tunnelUrl,
     );
 
     // Quiet pipeline without logRequests() to avoid terminal bloat from web polling

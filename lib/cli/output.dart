@@ -40,10 +40,11 @@ class CliOutput {
   static void printServerUrls({
     required int port,
     required List<String> lanIps,
+    String? tunnelUrl,
   }) {
     print('');
     print('$cyan$bold╭──────────────────────────────────────────────────╮$reset');
-    print('$cyan$bold│                 LAN SERVER ACTIVE                │$reset');
+    print('$cyan$bold│                 SERVER IS ACTIVE                 │$reset');
     print('$cyan$bold╰──────────────────────────────────────────────────╯$reset');
     print('');
     print('  Local:');
@@ -55,17 +56,29 @@ class CliOutput {
         print('    $green${bold}http://$ip:$port$reset');
       }
       print('');
-
-      final primaryUrl = 'http://${lanIps.first}:$port';
-      final qrString = QrGenerator.renderTerminalQr(primaryUrl);
-      if (qrString.isNotEmpty) {
-        print('  $cyan${bold}Scan QR Code to open web dashboard on mobile:$reset');
-        print(qrString);
-      }
     } else {
       print('  $yellow⚠ No active LAN network interface detected.$reset\n');
     }
-    print('  $dim(Open the LAN URL on mobile devices connected to the same Wi-Fi)$reset');
+
+    if (tunnelUrl != null && tunnelUrl.isNotEmpty) {
+      print('  Public Tunnel:');
+      print('    $green$bold$tunnelUrl$reset');
+      print('');
+      final qrString = QrGenerator.renderTerminalQr(tunnelUrl);
+      if (qrString.isNotEmpty) {
+        print('  $cyan${bold}Scan QR Code to open Public Tunnel on mobile:$reset');
+        print(qrString);
+      }
+    } else if (lanIps.isNotEmpty) {
+      final primaryUrl = 'http://${lanIps.first}:$port';
+      final qrString = QrGenerator.renderTerminalQr(primaryUrl);
+      if (qrString.isNotEmpty) {
+        print('  $cyan${bold}Scan QR Code to open Web Dashboard on mobile:$reset');
+        print(qrString);
+      }
+    }
+
+    print('  $dim(Open URL on mobile devices connected to same Wi-Fi or via Public Tunnel)$reset');
     print('  ${dim}Press Ctrl+C to stop the server cleanly.$reset');
     print('');
   }
@@ -75,6 +88,7 @@ class CliOutput {
     String? apkPath,
     String? apkSizeMb,
     String? primaryLanUrl,
+    String? tunnelUrl,
   }) {
     print('');
     if (success) {
@@ -84,7 +98,16 @@ class CliOutput {
       if (apkPath != null) {
         print('  APK:  $green$bold$apkPath$reset${apkSizeMb != null ? ' ($apkSizeMb MB)' : ''}');
       }
-      if (primaryLanUrl != null) {
+      if (tunnelUrl != null && tunnelUrl.isNotEmpty) {
+        final tunnelDownload = '$tunnelUrl/download';
+        print('  Public Download URL: $cyan$bold$tunnelDownload$reset');
+        print('');
+        final downloadQr = QrGenerator.renderTerminalQr(tunnelDownload);
+        if (downloadQr.isNotEmpty) {
+          print('  $green${bold}Scan QR Code to download APK via Public Tunnel:$reset');
+          print(downloadQr);
+        }
+      } else if (primaryLanUrl != null) {
         final downloadUrl = '$primaryLanUrl/download';
         print('  Direct Download URL: $cyan$bold$downloadUrl$reset');
         print('');

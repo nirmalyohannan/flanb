@@ -16,6 +16,7 @@ class FlanbRoutes {
   final BuildManager buildManager;
   final LogManager logManager;
   final File? Function() getApkFile;
+  final String? tunnelUrl;
 
   FlanbRoutes({
     required this.projectName,
@@ -24,6 +25,7 @@ class FlanbRoutes {
     required this.buildManager,
     required this.logManager,
     required this.getApkFile,
+    this.tunnelUrl,
   });
 
   Router get router {
@@ -52,6 +54,7 @@ class FlanbRoutes {
         'apkAvailable': apkExists,
         'apkName': apkExists ? p.basename(apkFile.path) : null,
         'apkSize': apkExists ? apkFile.lengthSync() : null,
+        'tunnelUrl': tunnelUrl,
       };
 
       return Response.ok(
@@ -83,8 +86,16 @@ class FlanbRoutes {
 
     // Serve SVG QR code for the given target URL (defaults to /download)
     app.get('/qr', (Request request) {
-      final targetUrl = request.requestedUri.queryParameters['url'] ??
-          request.requestedUri.resolve('/download').toString();
+      final queryUrl = request.requestedUri.queryParameters['url'];
+      String targetUrl;
+      if (queryUrl != null && queryUrl.isNotEmpty) {
+        targetUrl = queryUrl;
+      } else if (tunnelUrl != null && tunnelUrl!.isNotEmpty) {
+        targetUrl = '$tunnelUrl/download';
+      } else {
+        targetUrl = request.requestedUri.resolve('/download').toString();
+      }
+
       final svgContent = QrGenerator.renderSvgQr(targetUrl);
 
       return Response.ok(

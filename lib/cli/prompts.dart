@@ -1,5 +1,6 @@
 import 'dart:io';
 import '../build/build_config.dart';
+import '../tunnel/tunnel_provider.dart';
 import 'output.dart';
 
 class Prompts {
@@ -187,6 +188,18 @@ class Prompts {
             return 'Profile (for performance testing)';
         }
       },
+      defaultIndex: 0,
+    );
+  }
+
+  /// Prompts user to select a tunnel provider from available discovered options.
+  static TunnelProvider selectTunnelProvider(List<TunnelProvider> availableProviders) {
+    if (availableProviders.length <= 1) return TunnelProvider.none;
+
+    return selectFromList<TunnelProvider>(
+      title: 'Select Public Tunnel Service:',
+      choices: availableProviders,
+      displayItem: (provider) => provider.displayName,
       defaultIndex: 0,
     );
   }

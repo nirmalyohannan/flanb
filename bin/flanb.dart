@@ -16,8 +16,11 @@ import 'package:flanb/project/flutter_project.dart';
 import 'package:flanb/server/log_stream.dart';
 import 'package:flanb/server/network.dart';
 import 'package:flanb/server/server.dart';
+import 'package:flanb/tunnel/tunnel_discovery.dart';
+import 'package:flanb/tunnel/tunnel_provider.dart';
+import 'package:flanb/tunnel/tunnel_service.dart';
 
-const String version = '0.3.1';
+const String version = '0.4.0';
 
 ArgParser buildParser() {
   return ArgParser()
@@ -43,6 +46,11 @@ ArgParser buildParser() {
       abbr: 'p',
       defaultsTo: '8080',
       help: 'Port for the local HTTP server.',
+    )
+    ..addOption(
+      'tunnel',
+      abbr: 'u',
+      help: 'Tunnel local server to a public HTTPS URL (cloudflared, ngrok, lt, ssh, none).',
     )
     ..addFlag(
       'no-browser',
@@ -142,6 +150,18 @@ Future<void> main(List<String> arguments) async {
     selectedMode = Prompts.selectBuildMode();
   }
 
+  // 5. Discover & Select Public Tunnel Service
+  final availableTunnels = await TunnelDiscovery.discoverAvailable();
+  TunnelProvider selectedTunnel;
+
+  if (results.wasParsed('tunnel')) {
+    selectedTunnel = TunnelProvider.fromString(results['tunnel'] as String);
+  } else if (!nonInteractive && availableTunnels.length > 1) {
+    selectedTunnel = Prompts.selectTunnelProvider(availableTunnels);
+  } else {
+    selectedTunnel = TunnelProvider.none;
+  }
+
   final config = BuildConfig(
     flavor: selectedFlavor,
     entryPoint: selectedEntrypoint,
@@ -153,9 +173,10 @@ Future<void> main(List<String> arguments) async {
   print('  Version:    ${project.version}');
   print('  Flavor:     ${config.flavor ?? 'default (none)'}');
   print('  Entrypoint: ${config.entryPoint}');
-  print('  Mode:       ${config.mode.name}\n');
+  print('  Mode:       ${config.mode.name}');
+  print('  Tunnel:     ${selectedTunnel.displayName}\n');
 
-  // 5. Initialize Build Manager and Server
+  // 6. Initialize Build Manager and Server
   final logManager = LogManager();
   final buildManager = BuildManager(
     projectRoot: project.rootPath,
@@ -178,13 +199,35 @@ Future<void> main(List<String> arguments) async {
   final actualPort = await server.start();
   final lanIps = (await NetworkUtils.getLanIps()).map((info) => info.ipAddress).toList();
 
-  CliOutput.printServerUrls(port: actualPort, lanIps: lanIps);
+  TunnelService? tunnelService;
+  if (selectedTunnel != TunnelProvider.none) {
+    tunnelService = TunnelService(selectedTunnel);
+    final tunnelSpinner = TerminalSpinner(
+      message: 'Establishing ${selectedTunnel.displayName}...',
+    );
+    tunnelSpinner.start();
+    final publicUrl = await tunnelService.start(actualPort);
+    tunnelSpinner.stop();
+
+    if (publicUrl != null) {
+      server.tunnelUrl = publicUrl;
+      CliOutput.printSuccess('Public Tunnel established: $publicUrl');
+    } else {
+      CliOutput.printWarning('${selectedTunnel.displayName} failed to start or timed out. Falling back to Local LAN Server.');
+    }
+  }
+
+  CliOutput.printServerUrls(
+    port: actualPort,
+    lanIps: lanIps,
+    tunnelUrl: server.tunnelUrl,
+  );
 
   if (!results.flag('no-browser')) {
     unawaited(BrowserLauncher.openUrl('http://localhost:$actualPort'));
   }
 
-  // 6. Start Flutter Build with single-line animated spinner
+  // 7. Start Flutter Build with single-line animated spinner
   final buildStartTime = DateTime.now();
   final flavorTag = config.flavor ?? 'default';
   final spinner = TerminalSpinner(
@@ -214,6 +257,7 @@ Future<void> main(List<String> arguments) async {
         apkPath: relPath,
         apkSizeMb: sizeMB,
         primaryLanUrl: primaryLanUrl,
+        tunnelUrl: server.tunnelUrl,
       );
     } else {
       CliOutput.printWarning('Build completed, but could not locate the generated APK file.');
@@ -222,12 +266,14 @@ Future<void> main(List<String> arguments) async {
   } else {
     CliOutput.printBuildCompletion(
       success: false,
+      tunnelUrl: server.tunnelUrl,
     );
   }
 
   final completer = Completer<void>();
   ProcessSignal.sigint.watch().listen((_) async {
-    print('\n\nShutting down FLANB LAN server...');
+    print('\n\nShutting down FLANB server...');
+    tunnelService?.stop();
     await server.stop();
     logManager.dispose();
     completer.complete();
