@@ -16,7 +16,7 @@ class CliOutput {
     print('');
     print('$cyan$bold╭────────────────────────────────────╮$reset');
     print('$cyan$bold│              FLANB                 │$reset');
-    print('$cyan$bold│       Flutter LAN Build            │$reset');
+    print('$cyan$bold│   Flutter & Android LAN Build      │$reset');
     print('$cyan$bold│        by Nirmal Yohannan          │$reset');
     print('$cyan$bold╰────────────────────────────────────╯$reset');
     print('');
@@ -46,6 +46,20 @@ class CliOutput {
 
   static void printInfo(String message) {
     print('$cyanℹ $message$reset');
+  }
+
+  static void printInvalidProjectError() {
+    print('');
+    print('$red$bold╭──────────────────────────────────────────────────╮$reset');
+    print('$red$bold│ ✗ INVALID PROJECT DIRECTORY                      │$reset');
+    print('$red$bold╰──────────────────────────────────────────────────╯$reset');
+    print('');
+    print('  The current directory is not a recognized project type:');
+    print('    • $bold${cyan}Flutter$reset  (missing pubspec.yaml with flutter dependency)');
+    print('    • $bold${green}Android$reset  (missing gradlew or app/build.gradle[.kts])');
+    print('');
+    print('  ${dim}Use flanb --file <PATH> to share custom files, or run flanb --help for details.$reset');
+    print('');
   }
 
   static void printServerUrls({

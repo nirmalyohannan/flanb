@@ -1,3 +1,11 @@
+## 0.7.0
+
+- Added Native Android Project Build Support (`ProjectType.android`). FLANB now automatically detects Native Android projects (`gradlew` / `build.gradle` / `app/build.gradle[.kts]`) in addition to Flutter projects.
+- Refactored project pipeline architecture into modular separation of concerns flow runners (`runFlutterFlow`, `runAndroidFlow`, `runFileShareFlow`), making FLANB extensible for future frameworks and build pipelines.
+- Added Gradle process execution engine (`AndroidBuildManager`) executing `./gradlew assemble<Variant>` (e.g. `assembleRelease`, `assembleDevelopmentRelease`, `assembleDebug`).
+- Added Native Android APK Locator (`AndroidApkLocator`) locating output `.apk` files under `app/build/outputs/apk/`.
+- Added decorative CLI error banner when a directory is neither Flutter nor Native Android.
+
 ## 0.6.6
 
 - Fixed bug where `FlanbRoutes` was instantiated before `primaryLanUrl` was set on `LanServer`, causing `GET /status` and `GET /qr` to fall back to `localhost`.

@@ -3,6 +3,9 @@ import 'dart:io';
 import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
 
+import 'package:flanb/android/android_apk_locator.dart';
+import 'package:flanb/android/android_build_manager.dart';
+import 'package:flanb/android/android_project.dart';
 import 'package:flanb/browser/browser_launcher.dart';
 import 'package:flanb/build/apk_locator.dart';
 import 'package:flanb/build/build_config.dart';
@@ -13,6 +16,7 @@ import 'package:flanb/cli/spinner.dart';
 import 'package:flanb/project/entrypoint_discovery.dart';
 import 'package:flanb/project/flavor_discovery.dart';
 import 'package:flanb/project/flutter_project.dart';
+import 'package:flanb/project/project_type.dart';
 import 'package:flanb/server/log_stream.dart';
 import 'package:flanb/server/network.dart';
 import 'package:flanb/server/server.dart';
@@ -20,7 +24,7 @@ import 'package:flanb/tunnel/tunnel_discovery.dart';
 import 'package:flanb/tunnel/tunnel_provider.dart';
 import 'package:flanb/tunnel/tunnel_service.dart';
 
-const String version = '0.6.6';
+const String version = '0.7.0';
 
 ArgParser buildParser() {
   return ArgParser()
@@ -86,7 +90,7 @@ ArgParser buildParser() {
 }
 
 void printUsage(ArgParser parser) {
-  print('FLANB — Flutter LAN Build CLI v$version');
+  print('FLANB — Flutter & Android LAN Build CLI v$version');
   print('Usage: flanb [options]\n');
   print(parser.usage);
 }
@@ -132,173 +136,185 @@ Future<void> main(List<String> rawArguments) async {
 
   final bool nonInteractive = results.flag('non-interactive');
 
-  // ---------------------------------------------------------------------------
-  // MODE 1: CUSTOM FILE SHARING MODE (`flanb --file [PATH]`)
-  // ---------------------------------------------------------------------------
+  // 1. Check for Custom File Sharing Mode
   if (results.wasParsed('file')) {
-    final rawPath = (results['file'] as String?)?.trim() ?? '';
-    File sharedFile;
-
-    if (rawPath.isEmpty) {
-      // 1. User passed `--file` with no path -> Scan current directory
-      final currentDirFiles = Directory.current
-          .listSync()
-          .whereType<File>()
-          .where((f) => !p.basename(f.path).startsWith('.'))
-          .toList();
-
-      currentDirFiles.sort((a, b) =>
-          p.basename(a.path).toLowerCase().compareTo(p.basename(b.path).toLowerCase()));
-
-      if (currentDirFiles.isEmpty) {
-        CliOutput.printError('No shareable files found in current directory.');
-        exit(1);
-      }
-
-      if (currentDirFiles.length > 25) {
-        CliOutput.printError(
-            'Too many files (${currentDirFiles.length} files found) to display in current directory.');
-        CliOutput.printInfo(
-            'Please specify a file path with the argument (e.g. flanb --file ./app-release.apk).');
-        exit(1);
-      }
-
-      if (nonInteractive) {
-        sharedFile = currentDirFiles.first;
-      } else {
-        sharedFile = Prompts.selectFromList<File>(
-          title: 'Select a file to share from current directory:',
-          choices: currentDirFiles,
-          displayItem: (f) {
-            final sizeMB = (f.lengthSync() / (1024 * 1024)).toStringAsFixed(1);
-            return '${p.basename(f.path)} ($sizeMB MB)';
-          },
-        );
-      }
-    } else {
-      // 2. User passed a path -> Check if Directory or File
-      final entityType = FileSystemEntity.typeSync(rawPath);
-
-      if (entityType == FileSystemEntityType.directory) {
-        CliOutput.printError('Directory sharing is not supported as of now.');
-        CliOutput.printInfo(
-            'Please specify a file path (e.g. flanb --file ./my_app.apk).');
-        exit(1);
-      }
-
-      sharedFile = File(rawPath);
-
-      if (!sharedFile.existsSync()) {
-        CliOutput.printError('File not found at path: "$rawPath"');
-        exit(1);
-      }
-    }
-
-    final fileName = p.basename(sharedFile.path);
-    final sizeMB = (sharedFile.lengthSync() / (1024 * 1024)).toStringAsFixed(1);
-    CliOutput.printFileSharerBanner(fileName, sizeMB);
-
-    // Discover & Select Public Tunnel Service
-    final availableTunnels = await TunnelDiscovery.discoverAvailable();
-    TunnelProvider selectedTunnel;
-
-    if (results.wasParsed('tunnel')) {
-      selectedTunnel = TunnelProvider.fromString(results['tunnel'] as String);
-    } else if (!nonInteractive && availableTunnels.length > 1) {
-      selectedTunnel = Prompts.selectTunnelProvider(availableTunnels);
-    } else {
-      selectedTunnel = TunnelProvider.none;
-    }
-
-    final logManager = LogManager();
-    final dummyConfig = BuildConfig(entryPoint: fileName, mode: BuildMode.release);
-    final buildManager = BuildManager(projectRoot: Directory.current.path, config: dummyConfig);
-
-    final port = int.tryParse(results['port'] as String) ?? 8080;
-    final server = LanServer(
-      projectName: 'FLANB File Sharer',
-      projectVersion: version,
-      buildConfig: dummyConfig,
-      buildManager: buildManager,
-      logManager: logManager,
-      getApkFile: () => sharedFile,
-      requestedPort: port,
-      customSharedFile: sharedFile,
-    );
-
-    final actualPort = await server.start();
-    final lanIps = (await NetworkUtils.getLanIps()).map((info) => info.ipAddress).toList();
-    final primaryLanUrl = lanIps.isNotEmpty ? 'http://${lanIps.first}:$actualPort' : 'http://localhost:$actualPort';
-    server.primaryLanUrl = primaryLanUrl;
-
-    TunnelService? tunnelService;
-    if (selectedTunnel != TunnelProvider.none) {
-      tunnelService = TunnelService(selectedTunnel);
-      final tunnelSpinner = TerminalSpinner(
-        message: 'Establishing ${selectedTunnel.displayName}...',
-      );
-      tunnelSpinner.start();
-      final publicUrl = await tunnelService.start(actualPort);
-      tunnelSpinner.stop();
-
-      if (publicUrl != null) {
-        server.tunnelUrl = publicUrl;
-        CliOutput.printSuccess('Public Tunnel established: $publicUrl');
-      } else {
-        final reason = tunnelService.failureReason ?? 'Unknown error';
-        CliOutput.printWarning('${selectedTunnel.displayName} failed ($reason).');
-        CliOutput.printInfo('Falling back seamlessly to Local LAN Server.');
-      }
-    }
-
-    CliOutput.printServerUrls(
-      port: actualPort,
-      lanIps: lanIps,
-      tunnelUrl: server.tunnelUrl,
-    );
-
-    final downloadUrl = server.tunnelUrl != null ? '${server.tunnelUrl}/download' : '$primaryLanUrl/download';
-
-    print('${CliOutput.green}${CliOutput.bold}✓ File Share Active! Direct Download URL:${CliOutput.reset} ${CliOutput.cyan}${CliOutput.bold}$downloadUrl${CliOutput.reset}');
-    print('\n${CliOutput.dim}Server is active. Press Ctrl+C to stop sharing.${CliOutput.reset}\n');
-
-    if (!results.flag('no-browser')) {
-      unawaited(BrowserLauncher.openUrl('http://localhost:$actualPort'));
-    }
-
-    final completer = Completer<void>();
-    ProcessSignal.sigint.watch().listen((_) async {
-      print('\n\nShutting down FLANB file sharer...');
-      tunnelService?.stop();
-      await server.stop();
-      logManager.dispose();
-      completer.complete();
-      exit(0);
-    });
-
-    await completer.future;
+    await runFileShareFlow(results: results, nonInteractive: nonInteractive);
     return;
   }
 
-  // ---------------------------------------------------------------------------
-  // MODE 2: FLUTTER BUILD ENGINE MODE (Default)
-  // ---------------------------------------------------------------------------
   CliOutput.printBanner();
 
-  // 1. Validate Flutter Project
-  FlutterProject project;
-  try {
-    project = FlutterProject.fromDirectory();
-    CliOutput.printSuccess('Flutter project detected: ${project.name}');
-  } on FlutterProjectValidationException catch (e) {
-    CliOutput.printError(e.message);
-    CliOutput.printInfo('Make sure you are running FLANB from the root directory of a Flutter project or use --file to share a custom file.');
+  // 2. Detect Project Type (Flutter vs Native Android)
+  final projectType = ProjectDetector.detect();
+
+  if (projectType == ProjectType.flutter) {
+    await runFlutterFlow(results: results, nonInteractive: nonInteractive);
+  } else if (projectType == ProjectType.android) {
+    await runAndroidFlow(results: results, nonInteractive: nonInteractive);
+  } else {
+    CliOutput.printInvalidProjectError();
     exit(1);
   }
+}
 
-  // Interactive Sessions Outer Loop (Restart configuration flow)
+// -----------------------------------------------------------------------------
+// FLOW 1: CUSTOM FILE SHARING FLOW (`flanb --file [PATH]`)
+// -----------------------------------------------------------------------------
+Future<void> runFileShareFlow({
+  required ArgResults results,
+  required bool nonInteractive,
+}) async {
+  final rawPath = (results['file'] as String?)?.trim() ?? '';
+  File sharedFile;
+
+  if (rawPath.isEmpty) {
+    final currentDirFiles = Directory.current
+        .listSync()
+        .whereType<File>()
+        .where((f) => !p.basename(f.path).startsWith('.'))
+        .toList();
+
+    currentDirFiles.sort((a, b) =>
+        p.basename(a.path).toLowerCase().compareTo(p.basename(b.path).toLowerCase()));
+
+    if (currentDirFiles.isEmpty) {
+      CliOutput.printError('No shareable files found in current directory.');
+      exit(1);
+    }
+
+    if (currentDirFiles.length > 25) {
+      CliOutput.printError(
+          'Too many files (${currentDirFiles.length} files found) to display in current directory.');
+      CliOutput.printInfo(
+          'Please specify a file path with the argument (e.g. flanb --file ./app-release.apk).');
+      exit(1);
+    }
+
+    if (nonInteractive) {
+      sharedFile = currentDirFiles.first;
+    } else {
+      sharedFile = Prompts.selectFromList<File>(
+        title: 'Select a file to share from current directory:',
+        choices: currentDirFiles,
+        displayItem: (f) {
+          final sizeMB = (f.lengthSync() / (1024 * 1024)).toStringAsFixed(1);
+          return '${p.basename(f.path)} ($sizeMB MB)';
+        },
+      );
+    }
+  } else {
+    final entityType = FileSystemEntity.typeSync(rawPath);
+
+    if (entityType == FileSystemEntityType.directory) {
+      CliOutput.printError('Directory sharing is not supported as of now.');
+      CliOutput.printInfo(
+          'Please specify a file path (e.g. flanb --file ./my_app.apk).');
+      exit(1);
+    }
+
+    sharedFile = File(rawPath);
+
+    if (!sharedFile.existsSync()) {
+      CliOutput.printError('File not found at path: "$rawPath"');
+      exit(1);
+    }
+  }
+
+  final fileName = p.basename(sharedFile.path);
+  final sizeMB = (sharedFile.lengthSync() / (1024 * 1024)).toStringAsFixed(1);
+  CliOutput.printFileSharerBanner(fileName, sizeMB);
+
+  final availableTunnels = await TunnelDiscovery.discoverAvailable();
+  TunnelProvider selectedTunnel;
+
+  if (results.wasParsed('tunnel')) {
+    selectedTunnel = TunnelProvider.fromString(results['tunnel'] as String);
+  } else if (!nonInteractive && availableTunnels.length > 1) {
+    selectedTunnel = Prompts.selectTunnelProvider(availableTunnels);
+  } else {
+    selectedTunnel = TunnelProvider.none;
+  }
+
+  final logManager = LogManager();
+  final dummyConfig = BuildConfig(entryPoint: fileName, mode: BuildMode.release);
+  final buildManager = BuildManager(projectRoot: Directory.current.path, config: dummyConfig);
+
+  final port = int.tryParse(results['port'] as String) ?? 8080;
+  final server = LanServer(
+    projectName: 'FLANB File Sharer',
+    projectVersion: version,
+    buildConfig: dummyConfig,
+    buildManager: buildManager,
+    logManager: logManager,
+    getApkFile: () => sharedFile,
+    requestedPort: port,
+    customSharedFile: sharedFile,
+  );
+
+  final actualPort = await server.start();
+  final lanIps = (await NetworkUtils.getLanIps()).map((info) => info.ipAddress).toList();
+  final primaryLanUrl = lanIps.isNotEmpty ? 'http://${lanIps.first}:$actualPort' : 'http://localhost:$actualPort';
+  server.primaryLanUrl = primaryLanUrl;
+
+  TunnelService? tunnelService;
+  if (selectedTunnel != TunnelProvider.none) {
+    tunnelService = TunnelService(selectedTunnel);
+    final tunnelSpinner = TerminalSpinner(
+      message: 'Establishing ${selectedTunnel.displayName}...',
+    );
+    tunnelSpinner.start();
+    final publicUrl = await tunnelService.start(actualPort);
+    tunnelSpinner.stop();
+
+    if (publicUrl != null) {
+      server.tunnelUrl = publicUrl;
+      CliOutput.printSuccess('Public Tunnel established: $publicUrl');
+    } else {
+      final reason = tunnelService.failureReason ?? 'Unknown error';
+      CliOutput.printWarning('${selectedTunnel.displayName} failed ($reason).');
+      CliOutput.printInfo('Falling back seamlessly to Local LAN Server.');
+    }
+  }
+
+  CliOutput.printServerUrls(
+    port: actualPort,
+    lanIps: lanIps,
+    tunnelUrl: server.tunnelUrl,
+  );
+
+  final downloadUrl = server.tunnelUrl != null ? '${server.tunnelUrl}/download' : '$primaryLanUrl/download';
+
+  print('${CliOutput.green}${CliOutput.bold}✓ File Share Active! Direct Download URL:${CliOutput.reset} ${CliOutput.cyan}${CliOutput.bold}$downloadUrl${CliOutput.reset}');
+  print('\n${CliOutput.dim}Server is active. Press Ctrl+C to stop sharing.${CliOutput.reset}\n');
+
+  if (!results.flag('no-browser')) {
+    unawaited(BrowserLauncher.openUrl('http://localhost:$actualPort'));
+  }
+
+  final completer = Completer<void>();
+  ProcessSignal.sigint.watch().listen((_) async {
+    print('\n\nShutting down FLANB file sharer...');
+    tunnelService?.stop();
+    await server.stop();
+    logManager.dispose();
+    completer.complete();
+    exit(0);
+  });
+
+  await completer.future;
+}
+
+// -----------------------------------------------------------------------------
+// FLOW 2: FLUTTER BUILD ENGINE FLOW
+// -----------------------------------------------------------------------------
+Future<void> runFlutterFlow({
+  required ArgResults results,
+  required bool nonInteractive,
+}) async {
+  final project = FlutterProject.fromDirectory();
+  CliOutput.printSuccess('Flutter project detected: ${project.name}');
+
   while (true) {
-    // 2. Discover Flavors
     final discoveredFlavors = FlavorDiscovery.discover(project.rootPath);
     String? selectedFlavor = results['flavor'] as String?;
 
@@ -309,7 +325,6 @@ Future<void> main(List<String> rawArguments) async {
       }
     }
 
-    // 3. Discover Entry Points
     final discoveredEntrypoints = EntrypointDiscovery.discover(project.rootPath);
     String selectedEntrypoint = (results['target'] as String?) ?? '';
 
@@ -321,7 +336,6 @@ Future<void> main(List<String> rawArguments) async {
       }
     }
 
-    // 4. Select Build Mode
     BuildMode selectedMode;
     if (results.wasParsed('mode') || nonInteractive) {
       selectedMode = BuildMode.fromString(results['mode'] as String);
@@ -329,7 +343,6 @@ Future<void> main(List<String> rawArguments) async {
       selectedMode = Prompts.selectBuildMode();
     }
 
-    // 5. Discover & Select Public Tunnel Service
     final availableTunnels = await TunnelDiscovery.discoverAvailable();
     TunnelProvider selectedTunnel;
 
@@ -347,7 +360,7 @@ Future<void> main(List<String> rawArguments) async {
       mode: selectedMode,
     );
 
-    print('\n${CliOutput.bold}Build Configuration:${CliOutput.reset}');
+    print('\n${CliOutput.bold}Build Configuration (Flutter):${CliOutput.reset}');
     print('  Project:    ${project.name}');
     print('  Version:    ${project.version}');
     print('  Flavor:     ${config.flavor ?? 'default (none)'}');
@@ -355,7 +368,6 @@ Future<void> main(List<String> rawArguments) async {
     print('  Mode:       ${config.mode.name}');
     print('  Tunnel:     ${selectedTunnel.displayName}\n');
 
-    // 6. Initialize Build Manager and Server
     final logManager = LogManager();
     final buildManager = BuildManager(
       projectRoot: project.rootPath,
@@ -412,7 +424,6 @@ Future<void> main(List<String> rawArguments) async {
 
     bool isFirstBuild = true;
 
-    // Inner Rebuild Loop (Same config & active server)
     while (true) {
       if (!isFirstBuild) {
         logManager.addLog('\n--- REBUILDING FLUTTER APK ---');
@@ -430,8 +441,6 @@ Future<void> main(List<String> rawArguments) async {
       });
       spinner.stop();
 
-      final primaryLanUrl = lanIps.isNotEmpty ? 'http://${lanIps.first}:$actualPort' : 'http://localhost:$actualPort';
-
       if (buildSuccess) {
         locatedApk = ApkLocator.locate(
           project.rootPath,
@@ -446,7 +455,7 @@ Future<void> main(List<String> rawArguments) async {
             success: true,
             apkPath: relPath,
             apkSizeMb: sizeMB,
-            primaryLanUrl: primaryLanUrl,
+            primaryLanUrl: server.primaryLanUrl,
             tunnelUrl: server.tunnelUrl,
             showQr: isFirstBuild,
           );
@@ -476,7 +485,6 @@ Future<void> main(List<String> rawArguments) async {
         return;
       }
 
-      // Prompt user for Rebuild action: [r] Rebuild same config | [c] Change config / Restart
       final action = await Prompts.listenForRebuildAction();
       if (action == RebuildAction.rebuildSameConfig) {
         isFirstBuild = false;
@@ -486,7 +494,188 @@ Future<void> main(List<String> rawArguments) async {
         tunnelService?.stop();
         await server.stop();
         logManager.dispose();
-        break; // Break inner loop to restart configuration flow
+        break;
+      }
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// FLOW 3: NATIVE ANDROID BUILD ENGINE FLOW
+// -----------------------------------------------------------------------------
+Future<void> runAndroidFlow({
+  required ArgResults results,
+  required bool nonInteractive,
+}) async {
+  final androidProject = AndroidProject.fromDirectory();
+  CliOutput.printSuccess('Native Android project detected: ${androidProject.name}');
+
+  while (true) {
+    final discoveredFlavors = androidProject.discoveredFlavors;
+    String? selectedFlavor = results['flavor'] as String?;
+
+    if (selectedFlavor == null && !nonInteractive) {
+      if (discoveredFlavors.isNotEmpty) {
+        CliOutput.printInfo('Discovered Android flavors: ${discoveredFlavors.join(', ')}');
+        selectedFlavor = Prompts.selectFlavor(discoveredFlavors);
+      }
+    }
+
+    BuildMode selectedMode;
+    if (results.wasParsed('mode') || nonInteractive) {
+      selectedMode = BuildMode.fromString(results['mode'] as String);
+    } else {
+      selectedMode = Prompts.selectBuildMode();
+    }
+
+    final availableTunnels = await TunnelDiscovery.discoverAvailable();
+    TunnelProvider selectedTunnel;
+
+    if (results.wasParsed('tunnel')) {
+      selectedTunnel = TunnelProvider.fromString(results['tunnel'] as String);
+    } else if (!nonInteractive && availableTunnels.length > 1) {
+      selectedTunnel = Prompts.selectTunnelProvider(availableTunnels);
+    } else {
+      selectedTunnel = TunnelProvider.none;
+    }
+
+    print('\n${CliOutput.bold}Build Configuration (Native Android):${CliOutput.reset}');
+    print('  Project:    ${androidProject.name}');
+    print('  Flavor:     ${selectedFlavor ?? 'default (none)'}');
+    print('  Mode:       ${selectedMode.name}');
+    print('  Tunnel:     ${selectedTunnel.displayName}\n');
+
+    final logManager = LogManager();
+    final androidBuildManager = AndroidBuildManager(
+      projectRoot: androidProject.rootPath,
+      flavor: selectedFlavor,
+      mode: selectedMode,
+    );
+
+    File? locatedApk;
+    final dummyConfig = BuildConfig(entryPoint: 'Android App', mode: selectedMode, flavor: selectedFlavor);
+    final dummyFlutterBuildMgr = BuildManager(projectRoot: androidProject.rootPath, config: dummyConfig);
+
+    final port = int.tryParse(results['port'] as String) ?? 8080;
+    final server = LanServer(
+      projectName: androidProject.name,
+      projectVersion: 'Android',
+      buildConfig: dummyConfig,
+      buildManager: dummyFlutterBuildMgr,
+      logManager: logManager,
+      getApkFile: () => locatedApk,
+      requestedPort: port,
+    );
+
+    final actualPort = await server.start();
+    final lanIps = (await NetworkUtils.getLanIps()).map((info) => info.ipAddress).toList();
+    final primaryLanUrl = lanIps.isNotEmpty ? 'http://${lanIps.first}:$actualPort' : 'http://localhost:$actualPort';
+    server.primaryLanUrl = primaryLanUrl;
+
+    TunnelService? tunnelService;
+    if (selectedTunnel != TunnelProvider.none) {
+      tunnelService = TunnelService(selectedTunnel);
+      final tunnelSpinner = TerminalSpinner(
+        message: 'Establishing ${selectedTunnel.displayName}...',
+      );
+      tunnelSpinner.start();
+      final publicUrl = await tunnelService.start(actualPort);
+      tunnelSpinner.stop();
+
+      if (publicUrl != null) {
+        server.tunnelUrl = publicUrl;
+        CliOutput.printSuccess('Public Tunnel established: $publicUrl');
+      } else {
+        final reason = tunnelService.failureReason ?? 'Unknown error';
+        CliOutput.printWarning('${selectedTunnel.displayName} failed ($reason).');
+        CliOutput.printInfo('Falling back seamlessly to Local LAN Server.');
+      }
+    }
+
+    CliOutput.printServerUrls(
+      port: actualPort,
+      lanIps: lanIps,
+      tunnelUrl: server.tunnelUrl,
+    );
+
+    if (!results.flag('no-browser')) {
+      unawaited(BrowserLauncher.openUrl('http://localhost:$actualPort'));
+    }
+
+    bool isFirstBuild = true;
+
+    while (true) {
+      if (!isFirstBuild) {
+        logManager.addLog('\n--- REBUILDING NATIVE ANDROID APK ---');
+      }
+
+      final buildStartTime = DateTime.now();
+      final taskTag = androidBuildManager.taskName;
+      final spinner = TerminalSpinner(
+        message: 'Building Native Android APK ($taskTag)...',
+      );
+      spinner.start();
+
+      final buildSuccess = await androidBuildManager.build(onLog: (line) {
+        logManager.addLog(line);
+      });
+      spinner.stop();
+
+      if (buildSuccess) {
+        locatedApk = AndroidApkLocator.locate(
+          androidProject.rootPath,
+          flavor: selectedFlavor,
+          mode: selectedMode,
+          buildStartTime: buildStartTime,
+        );
+
+        if (locatedApk != null && locatedApk.existsSync()) {
+          final sizeMB = (locatedApk.lengthSync() / (1024 * 1024)).toStringAsFixed(1);
+          final relPath = p.relative(locatedApk.path, from: androidProject.rootPath);
+          CliOutput.printBuildCompletion(
+            success: true,
+            apkPath: relPath,
+            apkSizeMb: sizeMB,
+            primaryLanUrl: server.primaryLanUrl,
+            tunnelUrl: server.tunnelUrl,
+            showQr: isFirstBuild,
+          );
+        } else {
+          CliOutput.printWarning('Gradle build completed, but could not locate generated APK file.');
+          CliOutput.printInfo('Checked directory: app/build/outputs/apk/');
+        }
+      } else {
+        CliOutput.printBuildCompletion(
+          success: false,
+          tunnelUrl: server.tunnelUrl,
+          showQr: isFirstBuild,
+        );
+      }
+
+      if (nonInteractive) {
+        final completer = Completer<void>();
+        ProcessSignal.sigint.watch().listen((_) async {
+          print('\n\nShutting down FLANB server...');
+          tunnelService?.stop();
+          await server.stop();
+          logManager.dispose();
+          completer.complete();
+          exit(0);
+        });
+        await completer.future;
+        return;
+      }
+
+      final action = await Prompts.listenForRebuildAction();
+      if (action == RebuildAction.rebuildSameConfig) {
+        isFirstBuild = false;
+        continue;
+      } else {
+        print('\nShutting down active server and restarting configuration flow...');
+        tunnelService?.stop();
+        await server.stop();
+        logManager.dispose();
+        break;
       }
     }
   }
