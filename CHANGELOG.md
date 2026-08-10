@@ -1,3 +1,9 @@
+## 0.5.1
+
+- Added `--show-tunnels` CLI flag to inspect all supported tunneling services, their installation status (`INSTALLED` vs `NOT INSTALLED`), and installation commands on the host device.
+- Added `installHint` metadata to `TunnelProvider`.
+- Updated `README.md` documentation and CLI flags reference table.
+
 ## 0.5.0
 
 - Added interactive terminal key listener allowing developers to instantly **Rebuild (`r` / `Ctrl+r`)** or **Change Config (`c`)** after a build completes or fails.

@@ -1,4 +1,5 @@
 import '../server/qr_generator.dart';
+import '../tunnel/tunnel_provider.dart';
 
 class CliOutput {
   // ANSI Color escape codes
@@ -133,5 +134,37 @@ class CliOutput {
         'Press ${CliOutput.green}${CliOutput.bold}[r]${CliOutput.reset} to Rebuild (same config) │ '
         '${CliOutput.yellow}${CliOutput.bold}[c]${CliOutput.reset} to Change config / Restart │ '
         '${CliOutput.dim}[Ctrl+C] to Exit${CliOutput.reset}');
+  }
+
+  static void printSupportedTunnels(List<TunnelProvider> installedTunnels) {
+    final allSupported = [
+      TunnelProvider.cloudflared,
+      TunnelProvider.ngrok,
+      TunnelProvider.localtunnel,
+      TunnelProvider.localhostRun,
+    ];
+
+    print('');
+    print('$cyan$bold╭──────────────────────────────────────────────────╮$reset');
+    print('$cyan$bold│             SUPPORTED TUNNEL SERVICES            │$reset');
+    print('$cyan$bold╰──────────────────────────────────────────────────╯$reset');
+    print('');
+
+    for (final provider in allSupported) {
+      final isInstalled = installedTunnels.contains(provider);
+      final statusBadge = isInstalled
+          ? '$green$bold[ INSTALLED ]$reset'
+          : '$yellow$bold[ NOT INSTALLED ]$reset';
+      final nameStr = provider.displayName.padRight(32);
+      final hintStr = provider.installHint ?? '';
+
+      print('  $nameStr $statusBadge  $dim$hintStr$reset');
+    }
+
+    print('');
+    print('  ${dim}To run FLANB with a specific tunnel:$reset');
+    print('    $green${bold}flanb --tunnel cloudflared$reset');
+    print('    $green${bold}flanb -u ngrok$reset');
+    print('');
   }
 }

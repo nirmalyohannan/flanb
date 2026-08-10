@@ -20,7 +20,7 @@ import 'package:flanb/tunnel/tunnel_discovery.dart';
 import 'package:flanb/tunnel/tunnel_provider.dart';
 import 'package:flanb/tunnel/tunnel_service.dart';
 
-const String version = '0.5.0';
+const String version = '0.5.1';
 
 ArgParser buildParser() {
   return ArgParser()
@@ -51,6 +51,11 @@ ArgParser buildParser() {
       'tunnel',
       abbr: 'u',
       help: 'Tunnel local server to a public HTTPS URL (cloudflared, ngrok, lt, ssh, none).',
+    )
+    ..addFlag(
+      'show-tunnels',
+      negatable: false,
+      help: 'List supported tunneling services and their installation status on this device.',
     )
     ..addFlag(
       'no-browser',
@@ -101,6 +106,12 @@ Future<void> main(List<String> arguments) async {
 
   if (results.flag('version')) {
     print('flanb version: $version');
+    return;
+  }
+
+  if (results.flag('show-tunnels')) {
+    final installed = await TunnelDiscovery.discoverAvailable();
+    CliOutput.printSupportedTunnels(installed);
     return;
   }
 

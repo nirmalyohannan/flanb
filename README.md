@@ -101,6 +101,8 @@ flanb --non-interactive --no-browser
 | `--target` | `-t` | Main Dart entry point (e.g., `lib/main_dev.dart`) | `lib/main.dart` |
 | `--mode` | `-m` | Build mode (`release`, `debug`, `profile`) | `release` |
 | `--port` | `-p` | Local HTTP server port | `8080` |
+| `--tunnel` | `-u` | Public HTTP tunnel service (`cloudflared`, `ngrok`, `lt`, `ssh`) | `none` |
+| `--show-tunnels` | | List supported tunnels & their installation status | |
 | `--no-browser` | | Do not open the browser automatically | `false` |
 | `--non-interactive` | | Skip all terminal prompts | `false` |
 | `--help` | `-h` | Display usage information | |
