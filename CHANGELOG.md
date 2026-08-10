@@ -1,3 +1,9 @@
+## 0.6.3
+
+- Added directory path validation for `--file`. If a directory path is passed (e.g. `flanb --file ./my_folder/`), FLANB prints `✗ Directory sharing is not supported as of now.` with an example usage hint and exits safely.
+- Added interactive file selection prompt when `flanb --file` is run without specifying a file path.
+- Added 25-file terminal threshold limit. If the current directory contains more than 25 files, FLANB outputs a clean error message (`✗ Too many files (X files found) to display in current directory.`) to prevent spamming the terminal prompt.
+
 ## 0.6.2
 
 - Redesigned Web View for Custom File Sharing Mode (`flanb --file <PATH>`).

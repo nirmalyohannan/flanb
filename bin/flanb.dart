@@ -20,7 +20,7 @@ import 'package:flanb/tunnel/tunnel_discovery.dart';
 import 'package:flanb/tunnel/tunnel_provider.dart';
 import 'package:flanb/tunnel/tunnel_service.dart';
 
-const String version = '0.6.2';
+const String version = '0.6.3';
 
 ArgParser buildParser() {
   return ArgParser()
@@ -91,7 +91,18 @@ void printUsage(ArgParser parser) {
   print(parser.usage);
 }
 
-Future<void> main(List<String> arguments) async {
+Future<void> main(List<String> rawArguments) async {
+  // Pre-process arguments if user passed `--file` without an explicit path
+  final List<String> arguments = List.from(rawArguments);
+  final fileFlagIndex = arguments.indexOf('--file');
+  if (fileFlagIndex != -1) {
+    final isLast = fileFlagIndex == arguments.length - 1;
+    final nextIsFlag = !isLast && arguments[fileFlagIndex + 1].startsWith('-');
+    if (isLast || nextIsFlag) {
+      arguments.insert(fileFlagIndex + 1, '');
+    }
+  }
+
   final parser = buildParser();
   ArgResults results;
 
@@ -122,15 +133,65 @@ Future<void> main(List<String> arguments) async {
   final bool nonInteractive = results.flag('non-interactive');
 
   // ---------------------------------------------------------------------------
-  // MODE 1: CUSTOM FILE SHARING MODE (`flanb --file <PATH>`)
+  // MODE 1: CUSTOM FILE SHARING MODE (`flanb --file [PATH]`)
   // ---------------------------------------------------------------------------
   if (results.wasParsed('file')) {
-    final rawPath = results['file'] as String;
-    final sharedFile = File(rawPath);
+    final rawPath = (results['file'] as String?)?.trim() ?? '';
+    File sharedFile;
 
-    if (!sharedFile.existsSync()) {
-      CliOutput.printError('File not found at path: "$rawPath"');
-      exit(1);
+    if (rawPath.isEmpty) {
+      // 1. User passed `--file` with no path -> Scan current directory
+      final currentDirFiles = Directory.current
+          .listSync()
+          .whereType<File>()
+          .where((f) => !p.basename(f.path).startsWith('.'))
+          .toList();
+
+      currentDirFiles.sort((a, b) =>
+          p.basename(a.path).toLowerCase().compareTo(p.basename(b.path).toLowerCase()));
+
+      if (currentDirFiles.isEmpty) {
+        CliOutput.printError('No shareable files found in current directory.');
+        exit(1);
+      }
+
+      if (currentDirFiles.length > 25) {
+        CliOutput.printError(
+            'Too many files (${currentDirFiles.length} files found) to display in current directory.');
+        CliOutput.printInfo(
+            'Please specify a file path with the argument (e.g. flanb --file ./app-release.apk).');
+        exit(1);
+      }
+
+      if (nonInteractive) {
+        sharedFile = currentDirFiles.first;
+      } else {
+        sharedFile = Prompts.selectFromList<File>(
+          title: 'Select a file to share from current directory:',
+          choices: currentDirFiles,
+          displayItem: (f) {
+            final sizeMB = (f.lengthSync() / (1024 * 1024)).toStringAsFixed(1);
+            return '${p.basename(f.path)} ($sizeMB MB)';
+          },
+        );
+      }
+    } else {
+      // 2. User passed a path -> Check if Directory or File
+      final entityType = FileSystemEntity.typeSync(rawPath);
+
+      if (entityType == FileSystemEntityType.directory) {
+        CliOutput.printError('Directory sharing is not supported as of now.');
+        CliOutput.printInfo(
+            'Please specify a file path (e.g. flanb --file ./my_app.apk).');
+        exit(1);
+      }
+
+      sharedFile = File(rawPath);
+
+      if (!sharedFile.existsSync()) {
+        CliOutput.printError('File not found at path: "$rawPath"');
+        exit(1);
+      }
     }
 
     final fileName = p.basename(sharedFile.path);
