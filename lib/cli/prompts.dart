@@ -208,6 +208,26 @@ class Prompts {
     );
   }
 
+  /// Selects build mode for Native Android (Release or Debug only).
+  static BuildMode selectAndroidBuildMode() {
+    final modes = [BuildMode.release, BuildMode.debug];
+    return selectFromList<BuildMode>(
+      title: 'Select Build Mode (Native Android):',
+      choices: modes,
+      displayItem: (mode) {
+        switch (mode) {
+          case BuildMode.release:
+            return 'Release (optimised for deployment)';
+          case BuildMode.debug:
+            return 'Debug (faster build, larger binary)';
+          case BuildMode.profile:
+            return 'Profile (for performance testing)';
+        }
+      },
+      defaultIndex: 0,
+    );
+  }
+
   /// Prompts user to select a tunnel provider from available discovered options.
   static TunnelProvider selectTunnelProvider(List<TunnelProvider> availableProviders) {
     if (availableProviders.length <= 1) return TunnelProvider.none;

@@ -24,7 +24,7 @@ import 'package:flanb/tunnel/tunnel_discovery.dart';
 import 'package:flanb/tunnel/tunnel_provider.dart';
 import 'package:flanb/tunnel/tunnel_service.dart';
 
-const String version = '0.7.0';
+const String version = '0.7.1';
 
 ArgParser buildParser() {
   return ArgParser()
@@ -524,8 +524,11 @@ Future<void> runAndroidFlow({
     BuildMode selectedMode;
     if (results.wasParsed('mode') || nonInteractive) {
       selectedMode = BuildMode.fromString(results['mode'] as String);
+      if (selectedMode == BuildMode.profile) {
+        selectedMode = BuildMode.release;
+      }
     } else {
-      selectedMode = Prompts.selectBuildMode();
+      selectedMode = Prompts.selectAndroidBuildMode();
     }
 
     final availableTunnels = await TunnelDiscovery.discoverAvailable();

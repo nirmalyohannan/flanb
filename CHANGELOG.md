@@ -1,3 +1,8 @@
+## 0.7.1
+
+- Updated Native Android Build Mode Selection (`Prompts.selectAndroidBuildMode()`). Restricted options to `Release` and `Debug` (removing `Profile` mode, which is exclusive to Flutter).
+- Added fallback logic converting `--mode profile` to `Release` mode when passed via non-interactive CLI flags for Native Android builds.
+
 ## 0.7.0
 
 - Added Native Android Project Build Support (`ProjectType.android`). FLANB now automatically detects Native Android projects (`gradlew` / `build.gradle` / `app/build.gradle[.kts]`) in addition to Flutter projects.
