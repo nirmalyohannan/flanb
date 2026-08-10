@@ -1,3 +1,11 @@
+## 0.6.0
+
+- Added Custom File Sharing Mode (`flanb --file <FILE_PATH>`).
+- Bypasses Flutter project validation requirements when `--file` is passed, allowing developers to share any custom file (APKs, PDFs, ZIPs, images) over LAN and public HTTPS tunnels from any directory.
+- Prompt for tunneling service when sharing custom files.
+- Added custom file download streaming in `/download` endpoint with correct Content-Disposition attachment headers.
+- Updated terminal output banner and QR code generation for custom file sharing.
+
 ## 0.5.1
 
 - Added `--show-tunnels` CLI flag to inspect all supported tunneling services, their installation status (`INSTALLED` vs `NOT INSTALLED`), and installation commands on the host device.

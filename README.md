@@ -89,6 +89,9 @@ flanb --flavor staging --target lib/main_staging.dart --mode release
 # Use short aliases
 flanb -f staging -t lib/main_staging.dart -m release -p 8080
 
+# Share any custom file (APKs, PDFs, ZIPs) over LAN and Public Tunnel
+flanb --file ./my_app_build.apk
+
 # Non-interactive build (uses defaults for omitted options)
 flanb --non-interactive --no-browser
 ```
@@ -97,6 +100,7 @@ flanb --non-interactive --no-browser
 
 | Flag | Short | Description | Default |
 | --- | --- | --- | --- |
+| `--file` | | Share any custom file over LAN & Public Tunnel | `null` |
 | `--flavor` | `-f` | Android product flavor (e.g., `staging`, `prod`) | `null` (no flavor) |
 | `--target` | `-t` | Main Dart entry point (e.g., `lib/main_dev.dart`) | `lib/main.dart` |
 | `--mode` | `-m` | Build mode (`release`, `debug`, `profile`) | `release` |

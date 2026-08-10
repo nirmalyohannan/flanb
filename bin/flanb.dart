@@ -20,10 +20,14 @@ import 'package:flanb/tunnel/tunnel_discovery.dart';
 import 'package:flanb/tunnel/tunnel_provider.dart';
 import 'package:flanb/tunnel/tunnel_service.dart';
 
-const String version = '0.5.1';
+const String version = '0.6.0';
 
 ArgParser buildParser() {
   return ArgParser()
+    ..addOption(
+      'file',
+      help: 'Share any custom file over LAN and Public Tunnel (e.g. flanb --file ./my_app.apk).',
+    )
     ..addOption(
       'flavor',
       abbr: 'f',
@@ -115,6 +119,108 @@ Future<void> main(List<String> arguments) async {
     return;
   }
 
+  final bool nonInteractive = results.flag('non-interactive');
+
+  // ---------------------------------------------------------------------------
+  // MODE 1: CUSTOM FILE SHARING MODE (`flanb --file <PATH>`)
+  // ---------------------------------------------------------------------------
+  if (results.wasParsed('file')) {
+    final rawPath = results['file'] as String;
+    final sharedFile = File(rawPath);
+
+    if (!sharedFile.existsSync()) {
+      CliOutput.printError('File not found at path: "$rawPath"');
+      exit(1);
+    }
+
+    final fileName = p.basename(sharedFile.path);
+    final sizeMB = (sharedFile.lengthSync() / (1024 * 1024)).toStringAsFixed(1);
+    CliOutput.printFileSharerBanner(fileName, sizeMB);
+
+    // Discover & Select Public Tunnel Service
+    final availableTunnels = await TunnelDiscovery.discoverAvailable();
+    TunnelProvider selectedTunnel;
+
+    if (results.wasParsed('tunnel')) {
+      selectedTunnel = TunnelProvider.fromString(results['tunnel'] as String);
+    } else if (!nonInteractive && availableTunnels.length > 1) {
+      selectedTunnel = Prompts.selectTunnelProvider(availableTunnels);
+    } else {
+      selectedTunnel = TunnelProvider.none;
+    }
+
+    final logManager = LogManager();
+    final dummyConfig = BuildConfig(entryPoint: fileName, mode: BuildMode.release);
+    final buildManager = BuildManager(projectRoot: Directory.current.path, config: dummyConfig);
+
+    final port = int.tryParse(results['port'] as String) ?? 8080;
+    final server = LanServer(
+      projectName: 'FLANB File Sharer',
+      projectVersion: version,
+      buildConfig: dummyConfig,
+      buildManager: buildManager,
+      logManager: logManager,
+      getApkFile: () => sharedFile,
+      requestedPort: port,
+      customSharedFile: sharedFile,
+    );
+
+    final actualPort = await server.start();
+    final lanIps = (await NetworkUtils.getLanIps()).map((info) => info.ipAddress).toList();
+
+    TunnelService? tunnelService;
+    if (selectedTunnel != TunnelProvider.none) {
+      tunnelService = TunnelService(selectedTunnel);
+      final tunnelSpinner = TerminalSpinner(
+        message: 'Establishing ${selectedTunnel.displayName}...',
+      );
+      tunnelSpinner.start();
+      final publicUrl = await tunnelService.start(actualPort);
+      tunnelSpinner.stop();
+
+      if (publicUrl != null) {
+        server.tunnelUrl = publicUrl;
+        CliOutput.printSuccess('Public Tunnel established: $publicUrl');
+      } else {
+        final reason = tunnelService.failureReason ?? 'Unknown error';
+        CliOutput.printWarning('${selectedTunnel.displayName} failed ($reason).');
+        CliOutput.printInfo('Falling back seamlessly to Local LAN Server.');
+      }
+    }
+
+    CliOutput.printServerUrls(
+      port: actualPort,
+      lanIps: lanIps,
+      tunnelUrl: server.tunnelUrl,
+    );
+
+    final primaryLanUrl = lanIps.isNotEmpty ? 'http://${lanIps.first}:$actualPort' : 'http://localhost:$actualPort';
+    final downloadUrl = server.tunnelUrl != null ? '${server.tunnelUrl}/download' : '$primaryLanUrl/download';
+
+    print('${CliOutput.green}${CliOutput.bold}✓ File Share Active! Direct Download URL:${CliOutput.reset} ${CliOutput.cyan}${CliOutput.bold}$downloadUrl${CliOutput.reset}');
+    print('\n${CliOutput.dim}Server is active. Press Ctrl+C to stop sharing.${CliOutput.reset}\n');
+
+    if (!results.flag('no-browser')) {
+      unawaited(BrowserLauncher.openUrl('http://localhost:$actualPort'));
+    }
+
+    final completer = Completer<void>();
+    ProcessSignal.sigint.watch().listen((_) async {
+      print('\n\nShutting down FLANB file sharer...');
+      tunnelService?.stop();
+      await server.stop();
+      logManager.dispose();
+      completer.complete();
+      exit(0);
+    });
+
+    await completer.future;
+    return;
+  }
+
+  // ---------------------------------------------------------------------------
+  // MODE 2: FLUTTER BUILD ENGINE MODE (Default)
+  // ---------------------------------------------------------------------------
   CliOutput.printBanner();
 
   // 1. Validate Flutter Project
@@ -124,11 +230,9 @@ Future<void> main(List<String> arguments) async {
     CliOutput.printSuccess('Flutter project detected: ${project.name}');
   } on FlutterProjectValidationException catch (e) {
     CliOutput.printError(e.message);
-    CliOutput.printInfo('Make sure you are running FLANB from the root directory of a Flutter project.');
+    CliOutput.printInfo('Make sure you are running FLANB from the root directory of a Flutter project or use --file to share a custom file.');
     exit(1);
   }
-
-  final bool nonInteractive = results.flag('non-interactive');
 
   // Interactive Sessions Outer Loop (Restart configuration flow)
   while (true) {

@@ -17,6 +17,7 @@ class FlanbRoutes {
   final LogManager logManager;
   final File? Function() getApkFile;
   final String? tunnelUrl;
+  final File? customSharedFile;
 
   FlanbRoutes({
     required this.projectName,
@@ -26,6 +27,7 @@ class FlanbRoutes {
     required this.logManager,
     required this.getApkFile,
     this.tunnelUrl,
+    this.customSharedFile,
   });
 
   Router get router {
@@ -39,12 +41,36 @@ class FlanbRoutes {
       );
     });
 
-    // Serve JSON build status
+    // Serve JSON build / file share status
     app.get('/status', (Request request) {
+      if (customSharedFile != null && customSharedFile!.existsSync()) {
+        final fileName = p.basename(customSharedFile!.path);
+        final fileSize = customSharedFile!.lengthSync();
+
+        final data = {
+          'isFileSharing': true,
+          'status': 'serving',
+          'projectName': 'FLANB File Sharer',
+          'projectVersion': '0.6.0',
+          'fileName': fileName,
+          'fileSize': fileSize,
+          'apkAvailable': true,
+          'apkName': fileName,
+          'apkSize': fileSize,
+          'tunnelUrl': tunnelUrl,
+        };
+
+        return Response.ok(
+          jsonEncode(data),
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      }
+
       final apkFile = getApkFile();
       final apkExists = apkFile != null && apkFile.existsSync();
 
       final data = {
+        'isFileSharing': false,
         'status': buildManager.status.name,
         'projectName': projectName,
         'projectVersion': projectVersion,
@@ -104,23 +130,23 @@ class FlanbRoutes {
       );
     });
 
-    // Stream APK file download
+    // Stream APK or custom shared file download
     app.get('/download', (Request request) {
-      final apkFile = getApkFile();
+      final targetFile = customSharedFile ?? getApkFile();
 
-      if (apkFile == null || !apkFile.existsSync()) {
+      if (targetFile == null || !targetFile.existsSync()) {
         return Response.notFound(
-          'APK file not found. Make sure the build succeeded.',
+          'File not found. Make sure the file exists or the build succeeded.',
         );
       }
 
-      final fileName = p.basename(apkFile.path);
-      final fileSize = apkFile.lengthSync();
+      final fileName = p.basename(targetFile.path);
+      final fileSize = targetFile.lengthSync();
 
       return Response.ok(
-        apkFile.openRead(),
+        targetFile.openRead(),
         headers: {
-          'content-type': 'application/vnd.android.package-archive',
+          'content-type': 'application/octet-stream',
           'content-disposition': 'attachment; filename="$fileName"',
           'content-length': fileSize.toString(),
         },

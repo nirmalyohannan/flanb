@@ -16,6 +16,7 @@ class LanServer {
   final File? Function() getApkFile;
   final int requestedPort;
   String? tunnelUrl;
+  final File? customSharedFile;
 
   HttpServer? _server;
   int? _actualPort;
@@ -29,6 +30,7 @@ class LanServer {
     required this.getApkFile,
     this.requestedPort = 8080,
     this.tunnelUrl,
+    this.customSharedFile,
   });
 
   int get port => _actualPort ?? requestedPort;
@@ -45,6 +47,7 @@ class LanServer {
       logManager: logManager,
       getApkFile: getApkFile,
       tunnelUrl: tunnelUrl,
+      customSharedFile: customSharedFile,
     );
 
     // Quiet pipeline without logRequests() to avoid terminal bloat from web polling

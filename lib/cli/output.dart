@@ -22,6 +22,16 @@ class CliOutput {
     print('');
   }
 
+  static void printFileSharerBanner(String fileName, String fileSizeMb) {
+    print('');
+    print('$cyan$bold╭────────────────────────────────────╮$reset');
+    print('$cyan$bold│         FLANB FILE SHARER          │$reset');
+    print('$cyan$bold│        by Nirmal Yohannan          │$reset');
+    print('$cyan$bold╰────────────────────────────────────╯$reset');
+    print('');
+    print('  Sharing File: $green$bold$fileName$reset ($fileSizeMb MB)\n');
+  }
+
   static void printSuccess(String message) {
     print('$green✓ $message$reset');
   }
