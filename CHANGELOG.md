@@ -1,3 +1,10 @@
+## 0.6.6
+
+- Fixed bug where `FlanbRoutes` was instantiated before `primaryLanUrl` was set on `LanServer`, causing `GET /status` and `GET /qr` to fall back to `localhost`.
+- Replaced static URL parameters in `FlanbRoutes` with dynamic getters (`getPrimaryLanUrl` and `getTunnelUrl`).
+- Updated `LanServer.start()` to automatically resolve the primary Wi-Fi LAN IP address before initializing routes.
+- Guaranteed Web View QR codes and pill badges always display the actual LAN IP (`http://<LAN_IP>:<PORT>/download`) so smartphones on the same Wi-Fi network can scan and connect seamlessly.
+
 ## 0.6.5
 
 - Fixed Web view SVG QR Code URL resolution (`GET /qr`). When `tunnelUrl` is absent, the QR code now resolves to the actual primary LAN IP URL (`http://<LAN_IP>:<PORT>/download`) instead of `localhost`, ensuring mobile device cameras can scan and download files directly on local Wi-Fi networks.

@@ -41,6 +41,15 @@ class LanServer {
   Future<int> start() async {
     _actualPort = await NetworkUtils.findAvailablePort(requestedPort);
 
+    if (primaryLanUrl == null || primaryLanUrl!.isEmpty) {
+      final lanIps = await NetworkUtils.getLanIps();
+      if (lanIps.isNotEmpty) {
+        primaryLanUrl = 'http://${lanIps.first.ipAddress}:$_actualPort';
+      } else {
+        primaryLanUrl = 'http://localhost:$_actualPort';
+      }
+    }
+
     final routes = FlanbRoutes(
       projectName: projectName,
       projectVersion: projectVersion,
@@ -48,8 +57,8 @@ class LanServer {
       buildManager: buildManager,
       logManager: logManager,
       getApkFile: getApkFile,
-      tunnelUrl: tunnelUrl,
-      primaryLanUrl: primaryLanUrl,
+      getTunnelUrl: () => tunnelUrl,
+      getPrimaryLanUrl: () => primaryLanUrl,
       customSharedFile: customSharedFile,
     );
 

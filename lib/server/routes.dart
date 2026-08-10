@@ -16,8 +16,8 @@ class FlanbRoutes {
   final BuildManager buildManager;
   final LogManager logManager;
   final File? Function() getApkFile;
-  final String? tunnelUrl;
-  final String? primaryLanUrl;
+  final String? Function()? getTunnelUrl;
+  final String? Function()? getPrimaryLanUrl;
   final File? customSharedFile;
 
   FlanbRoutes({
@@ -27,10 +27,13 @@ class FlanbRoutes {
     required this.buildManager,
     required this.logManager,
     required this.getApkFile,
-    this.tunnelUrl,
-    this.primaryLanUrl,
+    this.getTunnelUrl,
+    this.getPrimaryLanUrl,
     this.customSharedFile,
   });
+
+  String? get activeTunnelUrl => getTunnelUrl?.call();
+  String? get activePrimaryLanUrl => getPrimaryLanUrl?.call();
 
   /// Builds RFC 6266 / RFC 5987 compliant Content-Disposition header.
   /// Uses a safe ASCII fallback for older clients and URI percent-encoding
@@ -56,6 +59,9 @@ class FlanbRoutes {
 
     // Serve JSON build / file share status
     app.get('/status', (Request request) {
+      final currentTunnel = activeTunnelUrl;
+      final currentLan = activePrimaryLanUrl;
+
       if (customSharedFile != null && customSharedFile!.existsSync()) {
         final fileName = p.basename(customSharedFile!.path);
         final fileSize = customSharedFile!.lengthSync();
@@ -64,15 +70,15 @@ class FlanbRoutes {
           'isFileSharing': true,
           'status': 'serving',
           'projectName': 'FLANB File Sharer',
-          'projectVersion': '0.6.5',
+          'projectVersion': '0.6.6',
           'fileName': fileName,
           'fileSize': fileSize,
           'apkAvailable': true,
           'apkName': fileName,
           'apkSize': fileSize,
-          'tunnelUrl': tunnelUrl,
-          'primaryLanUrl': primaryLanUrl,
-          'serverMode': tunnelUrl != null && tunnelUrl!.isNotEmpty
+          'tunnelUrl': currentTunnel,
+          'primaryLanUrl': currentLan,
+          'serverMode': (currentTunnel != null && currentTunnel.isNotEmpty)
               ? 'Public Tunnel'
               : 'Local LAN Server',
         };
@@ -97,9 +103,9 @@ class FlanbRoutes {
         'apkAvailable': apkExists,
         'apkName': apkExists ? p.basename(apkFile.path) : null,
         'apkSize': apkExists ? apkFile.lengthSync() : null,
-        'tunnelUrl': tunnelUrl,
-        'primaryLanUrl': primaryLanUrl,
-        'serverMode': tunnelUrl != null && tunnelUrl!.isNotEmpty
+        'tunnelUrl': currentTunnel,
+        'primaryLanUrl': currentLan,
+        'serverMode': (currentTunnel != null && currentTunnel.isNotEmpty)
             ? 'Public Tunnel'
             : 'Local LAN Server',
       };
@@ -134,13 +140,16 @@ class FlanbRoutes {
     // Serve SVG QR code for the given target URL (defaults to /download)
     app.get('/qr', (Request request) {
       final queryUrl = request.requestedUri.queryParameters['url'];
+      final currentTunnel = activeTunnelUrl;
+      final currentLan = activePrimaryLanUrl;
+
       String targetUrl;
       if (queryUrl != null && queryUrl.isNotEmpty) {
         targetUrl = queryUrl;
-      } else if (tunnelUrl != null && tunnelUrl!.isNotEmpty) {
-        targetUrl = '$tunnelUrl/download';
-      } else if (primaryLanUrl != null && primaryLanUrl!.isNotEmpty) {
-        targetUrl = '$primaryLanUrl/download';
+      } else if (currentTunnel != null && currentTunnel.isNotEmpty) {
+        targetUrl = '$currentTunnel/download';
+      } else if (currentLan != null && currentLan.isNotEmpty) {
+        targetUrl = '$currentLan/download';
       } else {
         targetUrl = request.requestedUri.resolve('/download').toString();
       }
