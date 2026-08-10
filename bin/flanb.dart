@@ -16,7 +16,7 @@ import 'package:flanb/server/log_stream.dart';
 import 'package:flanb/server/network.dart';
 import 'package:flanb/server/server.dart';
 
-const String version = '0.2.1';
+const String version = '0.3.0';
 
 ArgParser buildParser() {
   return ArgParser()
@@ -192,6 +192,8 @@ Future<void> main(List<String> arguments) async {
     logManager.addLog(line);
   });
 
+  final primaryLanUrl = lanIps.isNotEmpty ? 'http://${lanIps.first}:$actualPort' : 'http://localhost:$actualPort';
+
   if (buildSuccess) {
     locatedApk = ApkLocator.locate(
       project.rootPath,
@@ -201,18 +203,22 @@ Future<void> main(List<String> arguments) async {
 
     if (locatedApk != null && locatedApk.existsSync()) {
       final sizeMB = (locatedApk.lengthSync() / (1024 * 1024)).toStringAsFixed(1);
-      CliOutput.printSuccess('APK Located: ${p.relative(locatedApk.path, from: project.rootPath)} ($sizeMB MB)');
-      print('\n${CliOutput.green}${CliOutput.bold}Device Ready! Download the APK from any device on your Wi-Fi using the LAN URL above.${CliOutput.reset}');
+      final relPath = p.relative(locatedApk.path, from: project.rootPath);
+      CliOutput.printBuildCompletion(
+        success: true,
+        apkPath: relPath,
+        apkSizeMb: sizeMB,
+        primaryLanUrl: primaryLanUrl,
+      );
     } else {
       CliOutput.printWarning('Build completed, but could not locate the generated APK file.');
       CliOutput.printInfo('Checked directory: build/app/outputs/flutter-apk/');
     }
   } else {
-    CliOutput.printError('Build failed. Check the logs above or in the web UI for details.');
+    CliOutput.printBuildCompletion(
+      success: false,
+    );
   }
-
-  // 7. Keep server active until user signals termination
-  print('\n${CliOutput.dim}Server running. Press Ctrl+C to stop.${CliOutput.reset}');
 
   final completer = Completer<void>();
   ProcessSignal.sigint.watch().listen((_) async {

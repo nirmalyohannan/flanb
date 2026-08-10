@@ -1,3 +1,11 @@
+## 0.3.0
+
+- Added terminal ANSI QR Code rendering for the LAN URL so developers can scan their terminal screen directly with mobile cameras.
+- Added a "📱 QR Code" button and modal popup in the Web Dashboard next to the Download APK button.
+- Removed HTTP request logging middleware (`logRequests()`) to eliminate terminal bloat from web polling.
+- Added clean build completion status banners (`✓ BUILD FINISHED CLEANLY` / `✗ BUILD FAILED`) in the terminal upon build completion.
+- Added SVG QR Code generation endpoint (`GET /qr`).
+
 ## 0.2.1
 
 - Added native Web Notifications API integration on build **Success** (`✓ Build Successful`) or **Failure** (`✗ Build Failed`).

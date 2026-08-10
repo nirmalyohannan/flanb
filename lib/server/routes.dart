@@ -7,6 +7,7 @@ import '../build/build_config.dart';
 import '../build/build_manager.dart';
 import '../web/embedded_web.dart';
 import 'log_stream.dart';
+import 'qr_generator.dart';
 
 class FlanbRoutes {
   final String projectName;
@@ -77,6 +78,18 @@ class FlanbRoutes {
           'connection': 'keep-alive',
           'x-accel-buffering': 'no',
         },
+      );
+    });
+
+    // Serve SVG QR code for the given target URL (defaults to /download)
+    app.get('/qr', (Request request) {
+      final targetUrl = request.requestedUri.queryParameters['url'] ??
+          request.requestedUri.resolve('/download').toString();
+      final svgContent = QrGenerator.renderSvgQr(targetUrl);
+
+      return Response.ok(
+        svgContent,
+        headers: {'content-type': 'image/svg+xml; charset=utf-8'},
       );
     });
 

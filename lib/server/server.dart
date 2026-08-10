@@ -44,9 +44,8 @@ class LanServer {
       getApkFile: getApkFile,
     );
 
-    final pipeline = const Pipeline()
-        .addMiddleware(logRequests())
-        .addHandler(routes.router.call);
+    // Quiet pipeline without logRequests() to avoid terminal bloat from web polling
+    final pipeline = const Pipeline().addHandler(routes.router.call);
 
     _server = await shelf_io.serve(
       pipeline,

@@ -1,3 +1,5 @@
+import '../server/qr_generator.dart';
+
 class CliOutput {
   // ANSI Color escape codes
   static const String reset = '\x1B[0m';
@@ -53,11 +55,44 @@ class CliOutput {
         print('    $green${bold}http://$ip:$port$reset');
       }
       print('');
+
+      final primaryUrl = 'http://${lanIps.first}:$port';
+      final qrString = QrGenerator.renderTerminalQr(primaryUrl);
+      if (qrString.isNotEmpty) {
+        print('  $cyan${bold}Scan QR Code to open on mobile:$reset');
+        print(qrString);
+      }
     } else {
       print('  $yellow⚠ No active LAN network interface detected.$reset\n');
     }
     print('  $dim(Open the LAN URL on mobile devices connected to the same Wi-Fi)$reset');
     print('  ${dim}Press Ctrl+C to stop the server cleanly.$reset');
     print('');
+  }
+
+  static void printBuildCompletion({
+    required bool success,
+    String? apkPath,
+    String? apkSizeMb,
+    String? primaryLanUrl,
+  }) {
+    print('');
+    if (success) {
+      print('$green$bold╭──────────────────────────────────────────────────╮$reset');
+      print('$green$bold│              ✓ BUILD FINISHED CLEANLY            │$reset');
+      print('$green$bold╰──────────────────────────────────────────────────╯$reset');
+      if (apkPath != null) {
+        print('  APK:  $green$bold$apkPath$reset${apkSizeMb != null ? ' ($apkSizeMb MB)' : ''}');
+      }
+      if (primaryLanUrl != null) {
+        print('  Share URL: $cyan$bold$primaryLanUrl$reset');
+      }
+    } else {
+      print('$red$bold╭──────────────────────────────────────────────────╮$reset');
+      print('$red$bold│                ✗ BUILD FAILED                    │$reset');
+      print('$red$bold╰──────────────────────────────────────────────────╯$reset');
+      print('  Check the logs above or in the Web UI for error details.');
+    }
+    print('\n${CliOutput.dim}Server is active. Press Ctrl+C to stop.${CliOutput.reset}\n');
   }
 }

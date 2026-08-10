@@ -200,6 +200,12 @@ const String embeddedWebHtml = '''
       color: #64748b;
     }
 
+    .download-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
     .download-btn {
       display: inline-flex;
       align-items: center;
@@ -214,11 +220,71 @@ const String embeddedWebHtml = '''
       box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);
       transition: all 0.2s ease;
       white-space: nowrap;
+      border: none;
+      cursor: pointer;
     }
 
     .download-btn:hover {
       transform: translateY(-1px);
       box-shadow: 0 4px 14px rgba(16, 185, 129, 0.5);
+    }
+
+    .qr-btn {
+      background: linear-gradient(135deg, #38bdf8, #0284c7);
+      box-shadow: 0 2px 10px rgba(56, 189, 248, 0.3);
+    }
+
+    .qr-btn:hover {
+      box-shadow: 0 4px 14px rgba(56, 189, 248, 0.5);
+    }
+
+    /* QR Code Modal Overlay */
+    .qr-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(3, 7, 18, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .qr-modal-card {
+      background: #0b0f19;
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.25rem;
+      max-width: 320px;
+      width: 90%;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .qr-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .qr-image-container {
+      padding: 0.75rem;
+      background: #ffffff;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .qr-image-container img {
+      width: 200px;
+      height: 200px;
     }
 
     /* Full Body Console — Super Dark */
@@ -358,10 +424,30 @@ const String embeddedWebHtml = '''
         <div class="download-title">Build Completed Successfully</div>
         <div id="apkMetadata" class="download-sub">Ready for installation on local Android devices</div>
       </div>
-      <a id="downloadBtn" href="/download" class="download-btn">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Download APK
-      </a>
+      <div class="download-actions">
+        <button id="qrModalBtn" class="download-btn qr-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          QR Code
+        </button>
+        <a id="downloadBtn" href="/download" class="download-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download APK
+        </a>
+      </div>
+    </div>
+
+    <!-- QR Code Modal Popup -->
+    <div id="qrModal" class="qr-modal-overlay" style="display: none;">
+      <div class="qr-modal-card">
+        <div class="qr-modal-header">
+          <div style="font-weight: 700; font-size: 0.95rem; color: #fff;">Scan to Download APK</div>
+          <button id="closeQrModalBtn" class="btn-small">✕</button>
+        </div>
+        <div class="qr-image-container">
+          <img id="qrImage" src="/qr" alt="Download APK QR Code" />
+        </div>
+        <div style="font-size: 0.72rem; color: #64748b; text-align: center;">Scan with your mobile camera connected to the same Wi-Fi</div>
+      </div>
     </div>
 
     <!-- Full Body Console with Blinking Cursor -->
@@ -394,6 +480,10 @@ const String embeddedWebHtml = '''
     const statusBadge = document.getElementById('statusBadge');
     const statusText = document.getElementById('statusText');
 
+    const qrModalBtn = document.getElementById('qrModalBtn');
+    const qrModal = document.getElementById('qrModal');
+    const closeQrModalBtn = document.getElementById('closeQrModalBtn');
+
     const receivedLogs = new Set();
 
     autoScrollBtn.addEventListener('click', () => {
@@ -404,6 +494,18 @@ const String embeddedWebHtml = '''
     clearLogsBtn.addEventListener('click', () => {
       logLines.textContent = '';
       receivedLogs.clear();
+    });
+
+    qrModalBtn.addEventListener('click', () => {
+      qrModal.style.display = 'flex';
+    });
+
+    closeQrModalBtn.addEventListener('click', () => {
+      qrModal.style.display = 'none';
+    });
+
+    qrModal.addEventListener('click', (e) => {
+      if (e.target === qrModal) qrModal.style.display = 'none';
     });
 
     function updateNotifyBtn() {
