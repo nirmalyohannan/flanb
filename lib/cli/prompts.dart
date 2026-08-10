@@ -47,21 +47,37 @@ class Prompts {
     } catch (_) {}
 
     void renderMenu({bool isFirst = false}) {
+      int termCols = 80;
+      try {
+        if (stdout.hasTerminal) {
+          termCols = stdout.terminalColumns;
+        }
+      } catch (_) {}
+
       if (!isFirst) {
-        // Move cursor up by choices count + 1 lines
-        stdout.write('\x1B[${choices.length + 1}A');
+        // Move to column 1, move up by choices count + 1 lines, and clear down
+        stdout.write('\x1B[1G\x1B[${choices.length + 1}A\x1B[0J');
       }
 
-      stdout.write('${CliOutput.cyan}? $title ${CliOutput.dim}(Use ↑/↓ arrows, Enter to confirm)${CliOutput.reset}\x1B[K\n');
+      final titleStr = '? $title (Use ↑/↓ arrows, Enter to confirm)';
+      final safeTitle = titleStr.length > termCols && termCols > 10
+          ? '${titleStr.substring(0, termCols - 3)}...'
+          : titleStr;
+      stdout.write('${CliOutput.cyan}$safeTitle${CliOutput.reset}\x1B[K\n');
 
       for (int i = 0; i < choices.length; i++) {
         final isSelected = i == selectedIndex;
+        final rawText = displayItem(choices[i]);
+        final maxLen = termCols > 10 ? termCols - 4 : 76;
+        final safeText = rawText.length > maxLen && maxLen > 10
+            ? '${rawText.substring(0, maxLen - 3)}...'
+            : rawText;
+
         final prefix = isSelected ? '${CliOutput.green}${CliOutput.bold}❯ ' : '  ';
-        final text = displayItem(choices[i]);
         final formattedText = isSelected
-            ? '${CliOutput.green}${CliOutput.bold}$text${CliOutput.reset}'
-            : text;
-        stdout.write('$prefix$formattedText\x1B[K\n');
+            ? '${CliOutput.green}${CliOutput.bold}$safeText${CliOutput.reset}'
+            : safeText;
+        stdout.write('\x1B[1G\x1B[2K$prefix$formattedText\n');
       }
     }
 

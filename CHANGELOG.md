@@ -1,3 +1,9 @@
+## 0.6.4
+
+- Fixed interactive terminal menu re-printing issue when pressing arrow keys (↑/↓).
+- Implemented `\x1B[1G\x1B[0J` ANSI cursor movement and clear-down sequences, ensuring smooth in-place cursor updates.
+- Added automatic terminal column width detection (`stdout.terminalColumns`) and line truncation to prevent line wrapping duplication on narrower terminal windows or long file paths.
+
 ## 0.6.3
 
 - Added directory path validation for `--file`. If a directory path is passed (e.g. `flanb --file ./my_folder/`), FLANB prints `✗ Directory sharing is not supported as of now.` with an example usage hint and exits safely.
