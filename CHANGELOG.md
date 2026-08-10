@@ -1,3 +1,9 @@
+## 0.5.0
+
+- Added interactive terminal key listener allowing developers to instantly **Rebuild (`r` / `Ctrl+r`)** or **Change Config (`c`)** after a build completes or fails.
+- Rebuilding with the same configuration keeps the existing HTTP server and Public Tunnel active without re-printing QR codes or server links.
+- Choosing to change configuration cleanly stops active servers/tunnels and restarts the interactive setup flow.
+
 ## 0.4.1
 
 - Increased default tunneling connection safety timeout from 7 seconds to **15 seconds** for slower network handshakes.

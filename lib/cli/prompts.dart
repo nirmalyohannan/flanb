@@ -203,4 +203,71 @@ class Prompts {
       defaultIndex: 0,
     );
   }
+
+  /// Listens for terminal keypresses after a build completes or fails.
+  /// Returns [RebuildAction.rebuildSameConfig] for 'r' / 'Ctrl+r',
+  /// or [RebuildAction.restartConfig] for 'c'.
+  static Future<RebuildAction> listenForRebuildAction() async {
+    CliOutput.printRebuildPrompt();
+
+    try {
+      if (!stdin.hasTerminal) {
+        return _listenForRebuildActionFallback();
+      }
+    } catch (_) {
+      return _listenForRebuildActionFallback();
+    }
+
+    bool originalEcho = true;
+    bool originalLine = true;
+
+    try {
+      originalEcho = stdin.echoMode;
+      originalLine = stdin.lineMode;
+    } catch (_) {}
+
+    try {
+      stdin.echoMode = false;
+      stdin.lineMode = false;
+
+      while (true) {
+        final byte = stdin.readByteSync();
+
+        if (byte == 114 || byte == 82 || byte == 18) {
+          // 'r', 'R', or Ctrl+R
+          print('');
+          return RebuildAction.rebuildSameConfig;
+        } else if (byte == 99 || byte == 67) {
+          // 'c' or 'C'
+          print('');
+          return RebuildAction.restartConfig;
+        } else if (byte == 3) {
+          // Ctrl+C
+          print('\nShutting down FLANB...');
+          exit(0);
+        }
+      }
+    } catch (_) {
+      return _listenForRebuildActionFallback();
+    } finally {
+      try {
+        stdin.lineMode = originalLine;
+        stdin.echoMode = originalEcho;
+      } catch (_) {}
+    }
+  }
+
+  static RebuildAction _listenForRebuildActionFallback() {
+    stdout.write('${CliOutput.cyan}Enter choice [r=rebuild, c=change config]: ${CliOutput.reset}');
+    final input = stdin.readLineSync()?.trim().toLowerCase();
+    if (input == 'c' || input == 'change') {
+      return RebuildAction.restartConfig;
+    }
+    return RebuildAction.rebuildSameConfig;
+  }
+}
+
+enum RebuildAction {
+  rebuildSameConfig,
+  restartConfig,
 }

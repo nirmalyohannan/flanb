@@ -79,7 +79,6 @@ class CliOutput {
     }
 
     print('  $dim(Open URL on mobile devices connected to same Wi-Fi or via Public Tunnel)$reset');
-    print('  ${dim}Press Ctrl+C to stop the server cleanly.$reset');
     print('');
   }
 
@@ -89,6 +88,7 @@ class CliOutput {
     String? apkSizeMb,
     String? primaryLanUrl,
     String? tunnelUrl,
+    bool showQr = true,
   }) {
     print('');
     if (success) {
@@ -98,23 +98,25 @@ class CliOutput {
       if (apkPath != null) {
         print('  APK:  $green$bold$apkPath$reset${apkSizeMb != null ? ' ($apkSizeMb MB)' : ''}');
       }
-      if (tunnelUrl != null && tunnelUrl.isNotEmpty) {
-        final tunnelDownload = '$tunnelUrl/download';
-        print('  Public Download URL: $cyan$bold$tunnelDownload$reset');
-        print('');
-        final downloadQr = QrGenerator.renderTerminalQr(tunnelDownload);
-        if (downloadQr.isNotEmpty) {
-          print('  $green${bold}Scan QR Code to download APK via Public Tunnel:$reset');
-          print(downloadQr);
-        }
-      } else if (primaryLanUrl != null) {
-        final downloadUrl = '$primaryLanUrl/download';
-        print('  Direct Download URL: $cyan$bold$downloadUrl$reset');
-        print('');
-        final downloadQr = QrGenerator.renderTerminalQr(downloadUrl);
-        if (downloadQr.isNotEmpty) {
-          print('  $green${bold}Scan QR Code to download APK directly onto your device:$reset');
-          print(downloadQr);
+      if (showQr) {
+        if (tunnelUrl != null && tunnelUrl.isNotEmpty) {
+          final tunnelDownload = '$tunnelUrl/download';
+          print('  Public Download URL: $cyan$bold$tunnelDownload$reset');
+          print('');
+          final downloadQr = QrGenerator.renderTerminalQr(tunnelDownload);
+          if (downloadQr.isNotEmpty) {
+            print('  $green${bold}Scan QR Code to download APK via Public Tunnel:$reset');
+            print(downloadQr);
+          }
+        } else if (primaryLanUrl != null) {
+          final downloadUrl = '$primaryLanUrl/download';
+          print('  Direct Download URL: $cyan$bold$downloadUrl$reset');
+          print('');
+          final downloadQr = QrGenerator.renderTerminalQr(downloadUrl);
+          if (downloadQr.isNotEmpty) {
+            print('  $green${bold}Scan QR Code to download APK directly onto your device:$reset');
+            print(downloadQr);
+          }
         }
       }
     } else {
@@ -123,6 +125,13 @@ class CliOutput {
       print('$red$bold╰──────────────────────────────────────────────────╯$reset');
       print('  Check the logs in the Web UI for error details.');
     }
-    print('\n${CliOutput.dim}Server is active. Press Ctrl+C to stop.${CliOutput.reset}\n');
+    print('');
+  }
+
+  static void printRebuildPrompt() {
+    print('${CliOutput.cyan}${CliOutput.bold}Actions:${CliOutput.reset} '
+        'Press ${CliOutput.green}${CliOutput.bold}[r]${CliOutput.reset} to Rebuild (same config) │ '
+        '${CliOutput.yellow}${CliOutput.bold}[c]${CliOutput.reset} to Change config / Restart │ '
+        '${CliOutput.dim}[Ctrl+C] to Exit${CliOutput.reset}');
   }
 }

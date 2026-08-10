@@ -20,7 +20,7 @@ import 'package:flanb/tunnel/tunnel_discovery.dart';
 import 'package:flanb/tunnel/tunnel_provider.dart';
 import 'package:flanb/tunnel/tunnel_service.dart';
 
-const String version = '0.4.1';
+const String version = '0.5.0';
 
 ArgParser buildParser() {
   return ArgParser()
@@ -119,168 +119,196 @@ Future<void> main(List<String> arguments) async {
 
   final bool nonInteractive = results.flag('non-interactive');
 
-  // 2. Discover Flavors
-  final discoveredFlavors = FlavorDiscovery.discover(project.rootPath);
-  String? selectedFlavor = results['flavor'] as String?;
+  // Interactive Sessions Outer Loop (Restart configuration flow)
+  while (true) {
+    // 2. Discover Flavors
+    final discoveredFlavors = FlavorDiscovery.discover(project.rootPath);
+    String? selectedFlavor = results['flavor'] as String?;
 
-  if (selectedFlavor == null && !nonInteractive) {
-    if (discoveredFlavors.isNotEmpty) {
-      CliOutput.printInfo('Discovered Android flavors: ${discoveredFlavors.join(', ')}');
-      selectedFlavor = Prompts.selectFlavor(discoveredFlavors);
+    if (selectedFlavor == null && !nonInteractive) {
+      if (discoveredFlavors.isNotEmpty) {
+        CliOutput.printInfo('Discovered Android flavors: ${discoveredFlavors.join(', ')}');
+        selectedFlavor = Prompts.selectFlavor(discoveredFlavors);
+      }
     }
-  }
 
-  // 3. Discover Entry Points
-  final discoveredEntrypoints = EntrypointDiscovery.discover(project.rootPath);
-  String selectedEntrypoint = (results['target'] as String?) ?? '';
+    // 3. Discover Entry Points
+    final discoveredEntrypoints = EntrypointDiscovery.discover(project.rootPath);
+    String selectedEntrypoint = (results['target'] as String?) ?? '';
 
-  if (selectedEntrypoint.isEmpty) {
-    if (nonInteractive || discoveredEntrypoints.length <= 1) {
-      selectedEntrypoint = discoveredEntrypoints.first;
+    if (selectedEntrypoint.isEmpty) {
+      if (nonInteractive || discoveredEntrypoints.length <= 1) {
+        selectedEntrypoint = discoveredEntrypoints.first;
+      } else {
+        selectedEntrypoint = Prompts.selectEntrypoint(discoveredEntrypoints);
+      }
+    }
+
+    // 4. Select Build Mode
+    BuildMode selectedMode;
+    if (results.wasParsed('mode') || nonInteractive) {
+      selectedMode = BuildMode.fromString(results['mode'] as String);
     } else {
-      selectedEntrypoint = Prompts.selectEntrypoint(discoveredEntrypoints);
+      selectedMode = Prompts.selectBuildMode();
     }
-  }
 
-  // 4. Select Build Mode
-  BuildMode selectedMode;
-  if (results.wasParsed('mode') || nonInteractive) {
-    selectedMode = BuildMode.fromString(results['mode'] as String);
-  } else {
-    selectedMode = Prompts.selectBuildMode();
-  }
+    // 5. Discover & Select Public Tunnel Service
+    final availableTunnels = await TunnelDiscovery.discoverAvailable();
+    TunnelProvider selectedTunnel;
 
-  // 5. Discover & Select Public Tunnel Service
-  final availableTunnels = await TunnelDiscovery.discoverAvailable();
-  TunnelProvider selectedTunnel;
-
-  if (results.wasParsed('tunnel')) {
-    selectedTunnel = TunnelProvider.fromString(results['tunnel'] as String);
-  } else if (!nonInteractive && availableTunnels.length > 1) {
-    selectedTunnel = Prompts.selectTunnelProvider(availableTunnels);
-  } else {
-    selectedTunnel = TunnelProvider.none;
-  }
-
-  final config = BuildConfig(
-    flavor: selectedFlavor,
-    entryPoint: selectedEntrypoint,
-    mode: selectedMode,
-  );
-
-  print('\n${CliOutput.bold}Build Configuration:${CliOutput.reset}');
-  print('  Project:    ${project.name}');
-  print('  Version:    ${project.version}');
-  print('  Flavor:     ${config.flavor ?? 'default (none)'}');
-  print('  Entrypoint: ${config.entryPoint}');
-  print('  Mode:       ${config.mode.name}');
-  print('  Tunnel:     ${selectedTunnel.displayName}\n');
-
-  // 6. Initialize Build Manager and Server
-  final logManager = LogManager();
-  final buildManager = BuildManager(
-    projectRoot: project.rootPath,
-    config: config,
-  );
-
-  File? locatedApk;
-
-  final port = int.tryParse(results['port'] as String) ?? 8080;
-  final server = LanServer(
-    projectName: project.name,
-    projectVersion: project.version,
-    buildConfig: config,
-    buildManager: buildManager,
-    logManager: logManager,
-    getApkFile: () => locatedApk,
-    requestedPort: port,
-  );
-
-  final actualPort = await server.start();
-  final lanIps = (await NetworkUtils.getLanIps()).map((info) => info.ipAddress).toList();
-
-  TunnelService? tunnelService;
-  if (selectedTunnel != TunnelProvider.none) {
-    tunnelService = TunnelService(selectedTunnel);
-    final tunnelSpinner = TerminalSpinner(
-      message: 'Establishing ${selectedTunnel.displayName}...',
-    );
-    tunnelSpinner.start();
-    final publicUrl = await tunnelService.start(actualPort);
-    tunnelSpinner.stop();
-
-    if (publicUrl != null) {
-      server.tunnelUrl = publicUrl;
-      CliOutput.printSuccess('Public Tunnel established: $publicUrl');
+    if (results.wasParsed('tunnel')) {
+      selectedTunnel = TunnelProvider.fromString(results['tunnel'] as String);
+    } else if (!nonInteractive && availableTunnels.length > 1) {
+      selectedTunnel = Prompts.selectTunnelProvider(availableTunnels);
     } else {
-      final reason = tunnelService.failureReason ?? 'Unknown error';
-      CliOutput.printWarning('${selectedTunnel.displayName} failed ($reason).');
-      CliOutput.printInfo('Falling back seamlessly to Local LAN Server.');
+      selectedTunnel = TunnelProvider.none;
     }
-  }
 
-  CliOutput.printServerUrls(
-    port: actualPort,
-    lanIps: lanIps,
-    tunnelUrl: server.tunnelUrl,
-  );
-
-  if (!results.flag('no-browser')) {
-    unawaited(BrowserLauncher.openUrl('http://localhost:$actualPort'));
-  }
-
-  // 7. Start Flutter Build with single-line animated spinner
-  final buildStartTime = DateTime.now();
-  final flavorTag = config.flavor ?? 'default';
-  final spinner = TerminalSpinner(
-    message: 'Building Flutter APK ($flavorTag | ${config.mode.name} | ${config.entryPoint})...',
-  );
-  spinner.start();
-
-  final buildSuccess = await buildManager.build(onLog: (line) {
-    logManager.addLog(line);
-  });
-  spinner.stop();
-
-  final primaryLanUrl = lanIps.isNotEmpty ? 'http://${lanIps.first}:$actualPort' : 'http://localhost:$actualPort';
-
-  if (buildSuccess) {
-    locatedApk = ApkLocator.locate(
-      project.rootPath,
-      config,
-      buildStartTime: buildStartTime,
+    final config = BuildConfig(
+      flavor: selectedFlavor,
+      entryPoint: selectedEntrypoint,
+      mode: selectedMode,
     );
 
-    if (locatedApk != null && locatedApk.existsSync()) {
-      final sizeMB = (locatedApk.lengthSync() / (1024 * 1024)).toStringAsFixed(1);
-      final relPath = p.relative(locatedApk.path, from: project.rootPath);
-      CliOutput.printBuildCompletion(
-        success: true,
-        apkPath: relPath,
-        apkSizeMb: sizeMB,
-        primaryLanUrl: primaryLanUrl,
-        tunnelUrl: server.tunnelUrl,
+    print('\n${CliOutput.bold}Build Configuration:${CliOutput.reset}');
+    print('  Project:    ${project.name}');
+    print('  Version:    ${project.version}');
+    print('  Flavor:     ${config.flavor ?? 'default (none)'}');
+    print('  Entrypoint: ${config.entryPoint}');
+    print('  Mode:       ${config.mode.name}');
+    print('  Tunnel:     ${selectedTunnel.displayName}\n');
+
+    // 6. Initialize Build Manager and Server
+    final logManager = LogManager();
+    final buildManager = BuildManager(
+      projectRoot: project.rootPath,
+      config: config,
+    );
+
+    File? locatedApk;
+
+    final port = int.tryParse(results['port'] as String) ?? 8080;
+    final server = LanServer(
+      projectName: project.name,
+      projectVersion: project.version,
+      buildConfig: config,
+      buildManager: buildManager,
+      logManager: logManager,
+      getApkFile: () => locatedApk,
+      requestedPort: port,
+    );
+
+    final actualPort = await server.start();
+    final lanIps = (await NetworkUtils.getLanIps()).map((info) => info.ipAddress).toList();
+
+    TunnelService? tunnelService;
+    if (selectedTunnel != TunnelProvider.none) {
+      tunnelService = TunnelService(selectedTunnel);
+      final tunnelSpinner = TerminalSpinner(
+        message: 'Establishing ${selectedTunnel.displayName}...',
       );
-    } else {
-      CliOutput.printWarning('Build completed, but could not locate the generated APK file.');
-      CliOutput.printInfo('Checked directory: build/app/outputs/flutter-apk/');
+      tunnelSpinner.start();
+      final publicUrl = await tunnelService.start(actualPort);
+      tunnelSpinner.stop();
+
+      if (publicUrl != null) {
+        server.tunnelUrl = publicUrl;
+        CliOutput.printSuccess('Public Tunnel established: $publicUrl');
+      } else {
+        final reason = tunnelService.failureReason ?? 'Unknown error';
+        CliOutput.printWarning('${selectedTunnel.displayName} failed ($reason).');
+        CliOutput.printInfo('Falling back seamlessly to Local LAN Server.');
+      }
     }
-  } else {
-    CliOutput.printBuildCompletion(
-      success: false,
+
+    CliOutput.printServerUrls(
+      port: actualPort,
+      lanIps: lanIps,
       tunnelUrl: server.tunnelUrl,
     );
+
+    if (!results.flag('no-browser')) {
+      unawaited(BrowserLauncher.openUrl('http://localhost:$actualPort'));
+    }
+
+    bool isFirstBuild = true;
+
+    // Inner Rebuild Loop (Same config & active server)
+    while (true) {
+      if (!isFirstBuild) {
+        logManager.addLog('\n--- REBUILDING FLUTTER APK ---');
+      }
+
+      final buildStartTime = DateTime.now();
+      final flavorTag = config.flavor ?? 'default';
+      final spinner = TerminalSpinner(
+        message: 'Building Flutter APK ($flavorTag | ${config.mode.name} | ${config.entryPoint})...',
+      );
+      spinner.start();
+
+      final buildSuccess = await buildManager.build(onLog: (line) {
+        logManager.addLog(line);
+      });
+      spinner.stop();
+
+      final primaryLanUrl = lanIps.isNotEmpty ? 'http://${lanIps.first}:$actualPort' : 'http://localhost:$actualPort';
+
+      if (buildSuccess) {
+        locatedApk = ApkLocator.locate(
+          project.rootPath,
+          config,
+          buildStartTime: buildStartTime,
+        );
+
+        if (locatedApk != null && locatedApk.existsSync()) {
+          final sizeMB = (locatedApk.lengthSync() / (1024 * 1024)).toStringAsFixed(1);
+          final relPath = p.relative(locatedApk.path, from: project.rootPath);
+          CliOutput.printBuildCompletion(
+            success: true,
+            apkPath: relPath,
+            apkSizeMb: sizeMB,
+            primaryLanUrl: primaryLanUrl,
+            tunnelUrl: server.tunnelUrl,
+            showQr: isFirstBuild,
+          );
+        } else {
+          CliOutput.printWarning('Build completed, but could not locate the generated APK file.');
+          CliOutput.printInfo('Checked directory: build/app/outputs/flutter-apk/');
+        }
+      } else {
+        CliOutput.printBuildCompletion(
+          success: false,
+          tunnelUrl: server.tunnelUrl,
+          showQr: isFirstBuild,
+        );
+      }
+
+      if (nonInteractive) {
+        final completer = Completer<void>();
+        ProcessSignal.sigint.watch().listen((_) async {
+          print('\n\nShutting down FLANB server...');
+          tunnelService?.stop();
+          await server.stop();
+          logManager.dispose();
+          completer.complete();
+          exit(0);
+        });
+        await completer.future;
+        return;
+      }
+
+      // Prompt user for Rebuild action: [r] Rebuild same config | [c] Change config / Restart
+      final action = await Prompts.listenForRebuildAction();
+      if (action == RebuildAction.rebuildSameConfig) {
+        isFirstBuild = false;
+        continue;
+      } else {
+        print('\nShutting down active server and restarting configuration flow...');
+        tunnelService?.stop();
+        await server.stop();
+        logManager.dispose();
+        break; // Break inner loop to restart configuration flow
+      }
+    }
   }
-
-  final completer = Completer<void>();
-  ProcessSignal.sigint.watch().listen((_) async {
-    print('\n\nShutting down FLANB server...');
-    tunnelService?.stop();
-    await server.stop();
-    logManager.dispose();
-    completer.complete();
-    exit(0);
-  });
-
-  await completer.future;
 }
