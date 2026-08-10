@@ -1,3 +1,8 @@
+## 0.6.1
+
+- Fixed `FormatException: Invalid HTTP header field value` when downloading files containing Unicode characters (e.g. non-breaking spaces `\u00A0`, special symbols, accents, or emojis) in their filename.
+- Implemented RFC 6266 / RFC 5987 URI Percent Encoding (`filename*=UTF-8''...`) for HTTP `Content-Disposition` response headers, ensuring 100% specification compliance and full cross-browser Unicode support.
+
 ## 0.6.0
 
 - Added Custom File Sharing Mode (`flanb --file <FILE_PATH>`).

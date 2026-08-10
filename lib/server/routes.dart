@@ -30,6 +30,17 @@ class FlanbRoutes {
     this.customSharedFile,
   });
 
+  /// Builds RFC 6266 / RFC 5987 compliant Content-Disposition header.
+  /// Uses a safe ASCII fallback for older clients and URI percent-encoding
+  /// (`filename*=UTF-8''...`) to safely support full UTF-8 & Unicode filenames.
+  static String buildContentDisposition(String fileName) {
+    final safeAsciiName = fileName
+        .replaceAll('"', '_')
+        .replaceAll(RegExp(r'[^\x20-\x7E]'), '_');
+    final encodedUtf8Name = Uri.encodeComponent(fileName);
+    return 'attachment; filename="$safeAsciiName"; filename*=UTF-8\'\'$encodedUtf8Name';
+  }
+
   Router get router {
     final app = Router();
 
@@ -51,7 +62,7 @@ class FlanbRoutes {
           'isFileSharing': true,
           'status': 'serving',
           'projectName': 'FLANB File Sharer',
-          'projectVersion': '0.6.0',
+          'projectVersion': '0.6.1',
           'fileName': fileName,
           'fileSize': fileSize,
           'apkAvailable': true,
@@ -147,7 +158,7 @@ class FlanbRoutes {
         targetFile.openRead(),
         headers: {
           'content-type': 'application/octet-stream',
-          'content-disposition': 'attachment; filename="$fileName"',
+          'content-disposition': buildContentDisposition(fileName),
           'content-length': fileSize.toString(),
         },
       );
