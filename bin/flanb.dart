@@ -9,6 +9,7 @@ import 'package:flanb/build/build_config.dart';
 import 'package:flanb/build/build_manager.dart';
 import 'package:flanb/cli/output.dart';
 import 'package:flanb/cli/prompts.dart';
+import 'package:flanb/cli/spinner.dart';
 import 'package:flanb/project/entrypoint_discovery.dart';
 import 'package:flanb/project/flavor_discovery.dart';
 import 'package:flanb/project/flutter_project.dart';
@@ -16,7 +17,7 @@ import 'package:flanb/server/log_stream.dart';
 import 'package:flanb/server/network.dart';
 import 'package:flanb/server/server.dart';
 
-const String version = '0.3.0';
+const String version = '0.3.1';
 
 ArgParser buildParser() {
   return ArgParser()
@@ -183,14 +184,18 @@ Future<void> main(List<String> arguments) async {
     unawaited(BrowserLauncher.openUrl('http://localhost:$actualPort'));
   }
 
-  // 6. Start Flutter Build
-  print('${CliOutput.cyan}${CliOutput.bold}Starting Flutter APK build...${CliOutput.reset}\n');
+  // 6. Start Flutter Build with single-line animated spinner
   final buildStartTime = DateTime.now();
+  final flavorTag = config.flavor ?? 'default';
+  final spinner = TerminalSpinner(
+    message: 'Building Flutter APK ($flavorTag | ${config.mode.name} | ${config.entryPoint})...',
+  );
+  spinner.start();
 
   final buildSuccess = await buildManager.build(onLog: (line) {
-    print(line);
     logManager.addLog(line);
   });
+  spinner.stop();
 
   final primaryLanUrl = lanIps.isNotEmpty ? 'http://${lanIps.first}:$actualPort' : 'http://localhost:$actualPort';
 

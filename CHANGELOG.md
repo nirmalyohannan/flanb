@@ -1,3 +1,9 @@
+## 0.3.1
+
+- Replaced verbose terminal build log output with a clean, single-line animated spinner (`Building Flutter APK...`).
+- Captured all Flutter/Gradle stdout & stderr streams for real-time Web Console streaming without bloating the terminal.
+- Added terminal ANSI QR Code display for the direct APK download URL (`http://<LAN_IP>:<PORT>/download`) upon successful build completion.
+
 ## 0.3.0
 
 - Added terminal ANSI QR Code rendering for the LAN URL so developers can scan their terminal screen directly with mobile cameras.

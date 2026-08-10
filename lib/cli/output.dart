@@ -59,7 +59,7 @@ class CliOutput {
       final primaryUrl = 'http://${lanIps.first}:$port';
       final qrString = QrGenerator.renderTerminalQr(primaryUrl);
       if (qrString.isNotEmpty) {
-        print('  $cyan${bold}Scan QR Code to open on mobile:$reset');
+        print('  $cyan${bold}Scan QR Code to open web dashboard on mobile:$reset');
         print(qrString);
       }
     } else {
@@ -85,13 +85,20 @@ class CliOutput {
         print('  APK:  $green$bold$apkPath$reset${apkSizeMb != null ? ' ($apkSizeMb MB)' : ''}');
       }
       if (primaryLanUrl != null) {
-        print('  Share URL: $cyan$bold$primaryLanUrl$reset');
+        final downloadUrl = '$primaryLanUrl/download';
+        print('  Direct Download URL: $cyan$bold$downloadUrl$reset');
+        print('');
+        final downloadQr = QrGenerator.renderTerminalQr(downloadUrl);
+        if (downloadQr.isNotEmpty) {
+          print('  $green${bold}Scan QR Code to download APK directly onto your device:$reset');
+          print(downloadQr);
+        }
       }
     } else {
       print('$red$bold╭──────────────────────────────────────────────────╮$reset');
       print('$red$bold│                ✗ BUILD FAILED                    │$reset');
       print('$red$bold╰──────────────────────────────────────────────────╯$reset');
-      print('  Check the logs above or in the Web UI for error details.');
+      print('  Check the logs in the Web UI for error details.');
     }
     print('\n${CliOutput.dim}Server is active. Press Ctrl+C to stop.${CliOutput.reset}\n');
   }
