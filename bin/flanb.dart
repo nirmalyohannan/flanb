@@ -20,7 +20,7 @@ import 'package:flanb/tunnel/tunnel_discovery.dart';
 import 'package:flanb/tunnel/tunnel_provider.dart';
 import 'package:flanb/tunnel/tunnel_service.dart';
 
-const String version = '0.6.4';
+const String version = '0.6.5';
 
 ArgParser buildParser() {
   return ArgParser()
@@ -228,6 +228,8 @@ Future<void> main(List<String> rawArguments) async {
 
     final actualPort = await server.start();
     final lanIps = (await NetworkUtils.getLanIps()).map((info) => info.ipAddress).toList();
+    final primaryLanUrl = lanIps.isNotEmpty ? 'http://${lanIps.first}:$actualPort' : 'http://localhost:$actualPort';
+    server.primaryLanUrl = primaryLanUrl;
 
     TunnelService? tunnelService;
     if (selectedTunnel != TunnelProvider.none) {
@@ -255,7 +257,6 @@ Future<void> main(List<String> rawArguments) async {
       tunnelUrl: server.tunnelUrl,
     );
 
-    final primaryLanUrl = lanIps.isNotEmpty ? 'http://${lanIps.first}:$actualPort' : 'http://localhost:$actualPort';
     final downloadUrl = server.tunnelUrl != null ? '${server.tunnelUrl}/download' : '$primaryLanUrl/download';
 
     print('${CliOutput.green}${CliOutput.bold}✓ File Share Active! Direct Download URL:${CliOutput.reset} ${CliOutput.cyan}${CliOutput.bold}$downloadUrl${CliOutput.reset}');
@@ -376,6 +377,8 @@ Future<void> main(List<String> rawArguments) async {
 
     final actualPort = await server.start();
     final lanIps = (await NetworkUtils.getLanIps()).map((info) => info.ipAddress).toList();
+    final primaryLanUrl = lanIps.isNotEmpty ? 'http://${lanIps.first}:$actualPort' : 'http://localhost:$actualPort';
+    server.primaryLanUrl = primaryLanUrl;
 
     TunnelService? tunnelService;
     if (selectedTunnel != TunnelProvider.none) {

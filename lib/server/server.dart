@@ -16,6 +16,7 @@ class LanServer {
   final File? Function() getApkFile;
   final int requestedPort;
   String? tunnelUrl;
+  String? primaryLanUrl;
   final File? customSharedFile;
 
   HttpServer? _server;
@@ -30,6 +31,7 @@ class LanServer {
     required this.getApkFile,
     this.requestedPort = 8080,
     this.tunnelUrl,
+    this.primaryLanUrl,
     this.customSharedFile,
   });
 
@@ -47,6 +49,7 @@ class LanServer {
       logManager: logManager,
       getApkFile: getApkFile,
       tunnelUrl: tunnelUrl,
+      primaryLanUrl: primaryLanUrl,
       customSharedFile: customSharedFile,
     );
 

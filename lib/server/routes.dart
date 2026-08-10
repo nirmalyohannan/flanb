@@ -17,6 +17,7 @@ class FlanbRoutes {
   final LogManager logManager;
   final File? Function() getApkFile;
   final String? tunnelUrl;
+  final String? primaryLanUrl;
   final File? customSharedFile;
 
   FlanbRoutes({
@@ -27,6 +28,7 @@ class FlanbRoutes {
     required this.logManager,
     required this.getApkFile,
     this.tunnelUrl,
+    this.primaryLanUrl,
     this.customSharedFile,
   });
 
@@ -62,13 +64,17 @@ class FlanbRoutes {
           'isFileSharing': true,
           'status': 'serving',
           'projectName': 'FLANB File Sharer',
-          'projectVersion': '0.6.1',
+          'projectVersion': '0.6.5',
           'fileName': fileName,
           'fileSize': fileSize,
           'apkAvailable': true,
           'apkName': fileName,
           'apkSize': fileSize,
           'tunnelUrl': tunnelUrl,
+          'primaryLanUrl': primaryLanUrl,
+          'serverMode': tunnelUrl != null && tunnelUrl!.isNotEmpty
+              ? 'Public Tunnel'
+              : 'Local LAN Server',
         };
 
         return Response.ok(
@@ -92,6 +98,10 @@ class FlanbRoutes {
         'apkName': apkExists ? p.basename(apkFile.path) : null,
         'apkSize': apkExists ? apkFile.lengthSync() : null,
         'tunnelUrl': tunnelUrl,
+        'primaryLanUrl': primaryLanUrl,
+        'serverMode': tunnelUrl != null && tunnelUrl!.isNotEmpty
+            ? 'Public Tunnel'
+            : 'Local LAN Server',
       };
 
       return Response.ok(
@@ -129,6 +139,8 @@ class FlanbRoutes {
         targetUrl = queryUrl;
       } else if (tunnelUrl != null && tunnelUrl!.isNotEmpty) {
         targetUrl = '$tunnelUrl/download';
+      } else if (primaryLanUrl != null && primaryLanUrl!.isNotEmpty) {
+        targetUrl = '$primaryLanUrl/download';
       } else {
         targetUrl = request.requestedUri.resolve('/download').toString();
       }

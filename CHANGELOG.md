@@ -1,3 +1,8 @@
+## 0.6.5
+
+- Fixed Web view SVG QR Code URL resolution (`GET /qr`). When `tunnelUrl` is absent, the QR code now resolves to the actual primary LAN IP URL (`http://<LAN_IP>:<PORT>/download`) instead of `localhost`, ensuring mobile device cameras can scan and download files directly on local Wi-Fi networks.
+- Added Server Mode pill badge (`📶 Local LAN Server` vs `🌐 Public Tunnel`) to the File Sharer Dashboard View card in the embedded Web UI, showing exact connection mode and server URL details directly on the web page.
+
 ## 0.6.4
 
 - Fixed interactive terminal menu re-printing issue when pressing arrow keys (↑/↓).

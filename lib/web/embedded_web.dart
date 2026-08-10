@@ -291,6 +291,26 @@ const String embeddedWebHtml = '''
       font-weight: 500;
     }
 
+    .server-mode-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      color: var(--accent-blue);
+      padding: 0.35rem 0.85rem;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      word-break: break-all;
+    }
+
+    .server-mode-badge.tunnel-mode {
+      background: rgba(168, 85, 247, 0.1);
+      border-color: rgba(168, 85, 247, 0.3);
+      color: var(--accent-violet);
+    }
+
     .direct-qr-container {
       background: #ffffff;
       padding: 1rem;
@@ -520,6 +540,11 @@ const String embeddedWebHtml = '''
         <div id="shareFileName" class="file-title">File Name</div>
         <div id="shareFileSize" class="file-meta-sub">0 MB • Shared via FLANB</div>
 
+        <div id="shareServerModeBadge" class="server-mode-badge">
+          <span id="shareServerModeIcon">📶</span>
+          <span id="shareServerModeText">Local LAN Server</span>
+        </div>
+
         <div class="direct-qr-container">
           <img id="shareQrImage" src="/qr" alt="Direct Download QR Code" />
           <div class="direct-qr-sub">Scan with phone camera to download file</div>
@@ -701,6 +726,17 @@ const String embeddedWebHtml = '''
 
         if (data.fileName) document.getElementById('shareFileName').textContent = data.fileName;
         if (data.fileSize) document.getElementById('shareFileSize').textContent = `\${formatBytes(data.fileSize)} • FLANB File Share`;
+
+        const modeBadge = document.getElementById('shareServerModeBadge');
+        if (data.tunnelUrl) {
+          modeBadge.className = 'server-mode-badge tunnel-mode';
+          document.getElementById('shareServerModeIcon').textContent = '🌐';
+          document.getElementById('shareServerModeText').textContent = `Public Tunnel (\${data.tunnelUrl})`;
+        } else {
+          modeBadge.className = 'server-mode-badge';
+          document.getElementById('shareServerModeIcon').textContent = '📶';
+          document.getElementById('shareServerModeText').textContent = `Local LAN Server (\${data.primaryLanUrl || 'http://localhost'})`;
+        }
 
         statusBadge.className = 'status-badge status-success';
         statusText.textContent = 'Active';
