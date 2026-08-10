@@ -4,7 +4,7 @@ const String embeddedWebHtml = '''
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FLANB — Flutter LAN Build</title>
+  <title>FLANB — Flutter LAN Build & File Share</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -238,6 +238,97 @@ const String embeddedWebHtml = '''
       box-shadow: 0 4px 14px rgba(56, 189, 248, 0.5);
     }
 
+    /* File Sharer Card View */
+    .file-sharer-viewport {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at center, #071026 0%, #030712 100%);
+      padding: 1.5rem;
+      overflow-y: auto;
+    }
+
+    .file-card {
+      background: rgba(11, 15, 25, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      padding: 2.25rem 2rem;
+      max-width: 440px;
+      width: 100%;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.7);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 1.25rem;
+    }
+
+    .file-badge-icon {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(168, 85, 247, 0.15));
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.2rem;
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+    }
+
+    .file-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #f8fafc;
+      word-break: break-all;
+      line-height: 1.35;
+    }
+
+    .file-meta-sub {
+      font-size: 0.82rem;
+      color: #64748b;
+      font-weight: 500;
+    }
+
+    .direct-qr-container {
+      background: #ffffff;
+      padding: 1rem;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0.3rem 0;
+    }
+
+    .direct-qr-container img {
+      width: 190px;
+      height: 190px;
+    }
+
+    .direct-qr-sub {
+      font-size: 0.7rem;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .file-actions-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      width: 100%;
+    }
+
+    .big-download-btn {
+      flex: 1;
+      justify-content: center;
+      padding: 0.75rem 1.25rem;
+      font-size: 0.95rem;
+      border-radius: 10px;
+    }
+
     /* QR Code Modal Overlay */
     .qr-modal-overlay {
       position: fixed;
@@ -390,23 +481,23 @@ const String embeddedWebHtml = '''
       </div>
 
       <div class="meta-pills">
-        <div class="pill">
+        <div id="metaProjectPill" class="pill">
           <span class="pill-label">Project</span>
           <span id="metaProject" class="pill-val">-</span>
         </div>
-        <div class="pill">
+        <div id="metaVersionPill" class="pill">
           <span class="pill-label">Version</span>
           <span id="metaVersion" class="pill-val">-</span>
         </div>
-        <div class="pill">
+        <div id="metaFlavorPill" class="pill">
           <span class="pill-label">Flavor</span>
           <span id="metaFlavor" class="pill-val">default</span>
         </div>
-        <div class="pill">
+        <div id="metaEntryPill" class="pill">
           <span class="pill-label">Entry</span>
           <span id="metaEntry" class="pill-val">lib/main.dart</span>
         </div>
-        <div class="pill">
+        <div id="metaModePill" class="pill">
           <span class="pill-label">Mode</span>
           <span id="metaMode" class="pill-val">RELEASE</span>
         </div>
@@ -421,6 +512,27 @@ const String embeddedWebHtml = '''
         <span id="statusText">Initialising...</span>
       </div>
     </header>
+
+    <!-- Dedicated File Sharer View (visible when isFileSharing is true) -->
+    <main id="fileSharerViewport" class="file-sharer-viewport" style="display: none;">
+      <div class="file-card">
+        <div class="file-badge-icon">📦</div>
+        <div id="shareFileName" class="file-title">File Name</div>
+        <div id="shareFileSize" class="file-meta-sub">0 MB • Shared via FLANB</div>
+
+        <div class="direct-qr-container">
+          <img id="shareQrImage" src="/qr" alt="Direct Download QR Code" />
+          <div class="direct-qr-sub">Scan with phone camera to download file</div>
+        </div>
+
+        <div class="file-actions-row">
+          <a id="fileDownloadBtn" href="/download" class="download-btn big-download-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download File
+          </a>
+        </div>
+      </div>
+    </main>
 
     <!-- Download Banner (visible when build succeeds) -->
     <div id="downloadBanner" class="download-banner" style="display: none;">
@@ -455,7 +567,7 @@ const String embeddedWebHtml = '''
     </div>
 
     <!-- Full Body Console with Blinking Cursor -->
-    <main class="console-container">
+    <main id="consoleContainer" class="console-container">
       <div class="console-toolbar">
         <div>LIVE BUILD CONSOLE</div>
         <div class="console-controls">
@@ -489,6 +601,14 @@ const String embeddedWebHtml = '''
     const closeQrModalBtn = document.getElementById('closeQrModalBtn');
 
     const receivedLogs = new Set();
+
+    function formatBytes(bytes) {
+      if (!bytes || bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
 
     autoScrollBtn.addEventListener('click', () => {
       autoScroll = !autoScroll;
@@ -564,17 +684,37 @@ const String embeddedWebHtml = '''
     }
 
     function updateStatus(data) {
-      if (data.projectName) document.getElementById('metaProject').textContent = data.projectName;
-      if (data.projectVersion) document.getElementById('metaVersion').textContent = data.projectVersion;
-      if (data.flavor) document.getElementById('metaFlavor').textContent = data.flavor;
-      if (data.entryPoint) document.getElementById('metaEntry').textContent = data.entryPoint;
-      if (data.mode) document.getElementById('metaMode').textContent = data.mode.toUpperCase();
-
       if (data.tunnelUrl) {
         document.getElementById('tunnelPill').style.display = 'inline-flex';
       } else {
         document.getElementById('tunnelPill').style.display = 'none';
       }
+
+      if (data.isFileSharing) {
+        document.getElementById('consoleContainer').style.display = 'none';
+        document.getElementById('fileSharerViewport').style.display = 'flex';
+        document.getElementById('downloadBanner').style.display = 'none';
+        document.getElementById('metaProjectPill').style.display = 'none';
+        document.getElementById('metaFlavorPill').style.display = 'none';
+        document.getElementById('metaEntryPill').style.display = 'none';
+        document.getElementById('metaModePill').style.display = 'none';
+
+        if (data.fileName) document.getElementById('shareFileName').textContent = data.fileName;
+        if (data.fileSize) document.getElementById('shareFileSize').textContent = `\${formatBytes(data.fileSize)} • FLANB File Share`;
+
+        statusBadge.className = 'status-badge status-success';
+        statusText.textContent = 'Active';
+        return;
+      } else {
+        document.getElementById('consoleContainer').style.display = 'flex';
+        document.getElementById('fileSharerViewport').style.display = 'none';
+      }
+
+      if (data.projectName) document.getElementById('metaProject').textContent = data.projectName;
+      if (data.projectVersion) document.getElementById('metaVersion').textContent = data.projectVersion;
+      if (data.flavor) document.getElementById('metaFlavor').textContent = data.flavor;
+      if (data.entryPoint) document.getElementById('metaEntry').textContent = data.entryPoint;
+      if (data.mode) document.getElementById('metaMode').textContent = data.mode.toUpperCase();
 
       const currentStatus = (data.status || '').toLowerCase();
 

@@ -20,7 +20,7 @@ import 'package:flanb/tunnel/tunnel_discovery.dart';
 import 'package:flanb/tunnel/tunnel_provider.dart';
 import 'package:flanb/tunnel/tunnel_service.dart';
 
-const String version = '0.6.1';
+const String version = '0.6.2';
 
 ArgParser buildParser() {
   return ArgParser()

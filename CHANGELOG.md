@@ -1,3 +1,10 @@
+## 0.6.2
+
+- Redesigned Web View for Custom File Sharing Mode (`flanb --file <PATH>`).
+- Replaced Flutter console build log viewer with a dedicated, sleek **File Sharer Dashboard View**.
+- Embedded direct download QR code directly on the file card page (eliminating popup modals for file sharing).
+- Displayed prominent file icon, full filename, formatted file size badge (KB/MB/GB), and big glowing download button.
+
 ## 0.6.1
 
 - Fixed `FormatException: Invalid HTTP header field value` when downloading files containing Unicode characters (e.g. non-breaking spaces `\u00A0`, special symbols, accents, or emojis) in their filename.
