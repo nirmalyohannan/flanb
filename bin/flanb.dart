@@ -20,7 +20,7 @@ import 'package:flanb/tunnel/tunnel_discovery.dart';
 import 'package:flanb/tunnel/tunnel_provider.dart';
 import 'package:flanb/tunnel/tunnel_service.dart';
 
-const String version = '0.4.0';
+const String version = '0.4.1';
 
 ArgParser buildParser() {
   return ArgParser()
@@ -213,7 +213,9 @@ Future<void> main(List<String> arguments) async {
       server.tunnelUrl = publicUrl;
       CliOutput.printSuccess('Public Tunnel established: $publicUrl');
     } else {
-      CliOutput.printWarning('${selectedTunnel.displayName} failed to start or timed out. Falling back to Local LAN Server.');
+      final reason = tunnelService.failureReason ?? 'Unknown error';
+      CliOutput.printWarning('${selectedTunnel.displayName} failed ($reason).');
+      CliOutput.printInfo('Falling back seamlessly to Local LAN Server.');
     }
   }
 

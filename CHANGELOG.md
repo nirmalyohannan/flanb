@@ -1,9 +1,15 @@
+## 0.4.1
+
+- Increased default tunneling connection safety timeout from 7 seconds to **15 seconds** for slower network handshakes.
+- Added detailed failure logging when a tunnel fails (e.g. process exit codes, stderr/stdout error messages, or timeout reasons).
+- Improved CLI terminal output during tunnel fallback to display the exact failure cause.
+
 ## 0.4.0
 
 - Added automatic system scanning for installed public tunneling services (`cloudflared`, `ngrok`, `lt` / Localtunnel, `ssh` / `localhost.run`).
 - Added interactive terminal menu prompt for selecting a tunneling provider (default: `No Tunnel / Local LAN Server`).
 - Added non-interactive `--tunnel` / `-u` CLI flag (e.g. `--tunnel cloudflared`, `--tunnel ngrok`).
-- Added robust fail-safe engine with 7-second safety timeout. If a tunneling tool fails or times out, FLANB outputs a clear warning and seamlessly falls back to the default Local LAN Server without interrupting the build.
+- Added robust fail-safe engine with safety timeout. If a tunneling tool fails or times out, FLANB outputs a clear warning and seamlessly falls back to the default Local LAN Server without interrupting the build.
 - Added public HTTPS URL & QR code terminal rendering for active tunnels.
 - Added "Public Tunnel" pill badge and dual QR code support in Web View appbar.
 

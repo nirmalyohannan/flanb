@@ -5,12 +5,18 @@ import 'tunnel_provider.dart';
 
 class TunnelService {
   final TunnelProvider provider;
+  final Duration timeoutDuration;
   Process? _process;
   String? _publicUrl;
+  String? _failureReason;
 
-  TunnelService(this.provider);
+  TunnelService(
+    this.provider, {
+    this.timeoutDuration = const Duration(seconds: 15),
+  });
 
   String? get publicUrl => _publicUrl;
+  String? get failureReason => _failureReason;
 
   /// Starts the selected tunnel provider for local port [port].
   /// Returns the public HTTPS URL if successful, or null on failure/timeout.
@@ -19,6 +25,7 @@ class TunnelService {
 
     final completer = Completer<String?>();
     Timer? timeoutTimer;
+    String lastOutputLine = '';
 
     try {
       final List<String> args = _getCommandArgs(port);
@@ -30,28 +37,36 @@ class TunnelService {
         runInShell: Platform.isWindows,
       );
 
-      // Safety timeout: fallback if tunnel doesn't yield URL within 7 seconds
-      timeoutTimer = Timer(const Duration(seconds: 7), () {
+      // Safety timeout: fallback if tunnel doesn't yield URL within timeout duration (default 15s)
+      timeoutTimer = Timer(timeoutDuration, () {
         if (!completer.isCompleted) {
+          _failureReason = 'Connection timed out after ${timeoutDuration.inSeconds} seconds.';
           completer.complete(null);
         }
       });
 
-      // Stream stdout and stderr to parse the public URL
+      // Stream stdout to parse public URL and capture error context
       _process!.stdout
           .transform(utf8.decoder)
           .transform(const LineSplitter())
           .listen((line) {
+        if (line.trim().isNotEmpty) {
+          lastOutputLine = line.trim();
+        }
         final url = extractUrlFromLine(provider, line);
         if (url != null && !completer.isCompleted) {
           completer.complete(url);
         }
       });
 
+      // Stream stderr to parse public URL and capture error context
       _process!.stderr
           .transform(utf8.decoder)
           .transform(const LineSplitter())
           .listen((line) {
+        if (line.trim().isNotEmpty) {
+          lastOutputLine = line.trim();
+        }
         final url = extractUrlFromLine(provider, line);
         if (url != null && !completer.isCompleted) {
           completer.complete(url);
@@ -60,6 +75,11 @@ class TunnelService {
 
       _process!.exitCode.then((code) {
         if (!completer.isCompleted) {
+          if (code != 0) {
+            _failureReason = 'Process exited with code $code${lastOutputLine.isNotEmpty ? ': "$lastOutputLine"' : ''}';
+          } else {
+            _failureReason = 'Process exited unexpectedly before producing a tunnel URL.';
+          }
           completer.complete(null);
         }
       });
@@ -72,8 +92,9 @@ class TunnelService {
       }
 
       return _publicUrl;
-    } catch (_) {
+    } catch (e) {
       timeoutTimer?.cancel();
+      _failureReason = 'Command failed to start: ${e.toString()}';
       stop();
       return null;
     }
