@@ -1,3 +1,11 @@
+## 0.7.2
+
+- Fixed critical issue where `stdin.readByteSync()` in post-build rebuild prompt blocked the Dart isolate thread event loop after build completion, causing local HTTP server requests (`/`, `/status`, `/download`) to freeze or fail to resolve.
+- Converted post-build keypress listening (`Prompts.listenForRebuildAction()`) to a non-blocking asynchronous stream listener (`stdin.listen(...)`), ensuring the Shelf HTTP server remains 100% active and responsive while waiting for terminal rebuild shortcuts (`r`, `Ctrl+r`, `c`).
+- Added CORS middleware (`Access-Control-Allow-Origin: *`) to `LanServer` handling `OPTIONS` preflight requests across LAN and Public Tunnels.
+- Added automatic reconnect and history fallback error handlers to Web UI SSE EventSource (`connectSse()`).
+- Synchronized `BuildStatus` updates (`building`, `success`, `failed`) during Native Android build execution.
+
 ## 0.7.1
 
 - Updated Native Android Build Mode Selection (`Prompts.selectAndroidBuildMode()`). Restricted options to `Release` and `Debug` (removing `Profile` mode, which is exclusive to Flutter).

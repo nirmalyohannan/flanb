@@ -818,11 +818,20 @@ const String embeddedWebHtml = '''
 
     // 2. Connect Server-Sent Events (SSE) for live stream
     function connectSse() {
+      if (window.activeEventSource) {
+        try { window.activeEventSource.close(); } catch(e) {}
+      }
       const eventSource = new EventSource('/logs');
+      window.activeEventSource = eventSource;
+
       eventSource.onmessage = (event) => {
         if (event.data) {
           appendLog(event.data);
         }
+      };
+
+      eventSource.onerror = (err) => {
+        fetchLogHistory();
       };
     }
 

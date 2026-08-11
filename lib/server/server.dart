@@ -62,8 +62,26 @@ class LanServer {
       customSharedFile: customSharedFile,
     );
 
-    // Quiet pipeline without logRequests() to avoid terminal bloat from web polling
-    final pipeline = const Pipeline().addHandler(routes.router.call);
+    // CORS & quiet pipeline without logRequests() to avoid terminal bloat from web polling
+    final pipeline = const Pipeline()
+        .addMiddleware((innerHandler) {
+          return (request) async {
+            if (request.method == 'OPTIONS') {
+              return Response.ok('', headers: {
+                'access-control-allow-origin': '*',
+                'access-control-allow-methods': 'GET, POST, OPTIONS',
+                'access-control-allow-headers': '*',
+              });
+            }
+            final response = await innerHandler(request);
+            return response.change(headers: {
+              'access-control-allow-origin': '*',
+              'access-control-allow-methods': 'GET, POST, OPTIONS',
+              'access-control-allow-headers': '*',
+            });
+          };
+        })
+        .addHandler(routes.router.call);
 
     _server = await shelf_io.serve(
       pipeline,

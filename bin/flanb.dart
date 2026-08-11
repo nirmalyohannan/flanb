@@ -24,7 +24,7 @@ import 'package:flanb/tunnel/tunnel_discovery.dart';
 import 'package:flanb/tunnel/tunnel_provider.dart';
 import 'package:flanb/tunnel/tunnel_service.dart';
 
-const String version = '0.7.1';
+const String version = '0.7.2';
 
 ArgParser buildParser() {
   return ArgParser()
@@ -619,12 +619,14 @@ Future<void> runAndroidFlow({
       );
       spinner.start();
 
+      dummyFlutterBuildMgr.status = BuildStatus.building;
       final buildSuccess = await androidBuildManager.build(onLog: (line) {
         logManager.addLog(line);
       });
       spinner.stop();
 
       if (buildSuccess) {
+        dummyFlutterBuildMgr.status = BuildStatus.success;
         locatedApk = AndroidApkLocator.locate(
           androidProject.rootPath,
           flavor: selectedFlavor,
@@ -648,6 +650,7 @@ Future<void> runAndroidFlow({
           CliOutput.printInfo('Checked directory: app/build/outputs/apk/');
         }
       } else {
+        dummyFlutterBuildMgr.status = BuildStatus.failed;
         CliOutput.printBuildCompletion(
           success: false,
           tunnelUrl: server.tunnelUrl,
