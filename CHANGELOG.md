@@ -1,3 +1,9 @@
+## 0.7.3
+
+- Disabled automatic browser launching on build start by default. Added `--open-browser` (`-b`) CLI flag to manually opt-in to auto-opening the browser dashboard.
+- Updated `NetworkUtils.getLanIps()` IP sorting logic. Prioritizes standard `192.168.x.x` Wi-Fi router addresses FIRST as the Primary LAN IP, ensuring terminal and Web SVG QR codes render the expected `192.168...` IP address.
+- Prioritized physical network interface names (`en0`, `eth0`, `wlan0`, `Wi-Fi`, `Ethernet`) over virtual interfaces (`utun`, `docker`, `veth`, `vbox`).
+
 ## 0.7.2
 
 - Fixed critical issue where `stdin.readByteSync()` in post-build rebuild prompt blocked the Dart isolate thread event loop after build completion, causing local HTTP server requests (`/`, `/status`, `/download`) to freeze or fail to resolve.

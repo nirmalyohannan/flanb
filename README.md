@@ -144,8 +144,8 @@ flanb --flavor staging --mode release --tunnel cloudflared
 # Short aliases
 flanb -f staging -m release -u ngrok -p 8080
 
-# Non-interactive mode (uses defaults for omitted options)
-flanb --non-interactive --no-browser
+# Non-interactive mode with optional browser auto-open
+flanb --non-interactive --open-browser
 ```
 
 #### Available Flags
@@ -159,7 +159,7 @@ flanb --non-interactive --no-browser
 | `--port` | `-p` | Local HTTP server port | `8080` |
 | `--tunnel` | `-u` | Public HTTP tunnel (`cloudflared`, `ngrok`, `lt`, `ssh`, `none`) | `none` |
 | `--show-tunnels` | | List supported tunneling tools & installation status | |
-| `--no-browser` | | Do not open the browser automatically | `false` |
+| `--open-browser` | `-b` | Automatically open the browser dashboard on start | `false` |
 | `--non-interactive` | | Skip all terminal prompts (runs with defaults) | `false` |
 | `--help` | `-h` | Display usage information | |
 | `--version` | `-v` | Display FLANB version | |

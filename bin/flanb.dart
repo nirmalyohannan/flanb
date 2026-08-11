@@ -24,7 +24,7 @@ import 'package:flanb/tunnel/tunnel_discovery.dart';
 import 'package:flanb/tunnel/tunnel_provider.dart';
 import 'package:flanb/tunnel/tunnel_service.dart';
 
-const String version = '0.7.2';
+const String version = '0.7.3';
 
 ArgParser buildParser() {
   return ArgParser()
@@ -66,9 +66,10 @@ ArgParser buildParser() {
       help: 'List supported tunneling services and their installation status on this device.',
     )
     ..addFlag(
-      'no-browser',
+      'open-browser',
+      abbr: 'b',
       negatable: false,
-      help: 'Do not automatically open the browser.',
+      help: 'Automatically open the web dashboard in your browser on start (default: false).',
     )
     ..addFlag(
       'non-interactive',
@@ -287,7 +288,7 @@ Future<void> runFileShareFlow({
   print('${CliOutput.green}${CliOutput.bold}✓ File Share Active! Direct Download URL:${CliOutput.reset} ${CliOutput.cyan}${CliOutput.bold}$downloadUrl${CliOutput.reset}');
   print('\n${CliOutput.dim}Server is active. Press Ctrl+C to stop sharing.${CliOutput.reset}\n');
 
-  if (!results.flag('no-browser')) {
+  if (results.flag('open-browser')) {
     unawaited(BrowserLauncher.openUrl('http://localhost:$actualPort'));
   }
 
@@ -418,7 +419,7 @@ Future<void> runFlutterFlow({
       tunnelUrl: server.tunnelUrl,
     );
 
-    if (!results.flag('no-browser')) {
+    if (results.flag('open-browser')) {
       unawaited(BrowserLauncher.openUrl('http://localhost:$actualPort'));
     }
 
@@ -601,7 +602,7 @@ Future<void> runAndroidFlow({
       tunnelUrl: server.tunnelUrl,
     );
 
-    if (!results.flag('no-browser')) {
+    if (results.flag('open-browser')) {
       unawaited(BrowserLauncher.openUrl('http://localhost:$actualPort'));
     }
 
