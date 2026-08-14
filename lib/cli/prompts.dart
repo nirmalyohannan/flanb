@@ -203,6 +203,21 @@ class Prompts {
     );
   }
 
+  /// Prompts user whether to perform a Clean Build before building.
+  static bool selectCleanBuild() {
+    final choices = [false, true];
+    return selectFromList<bool>(
+      title: 'Perform Clean Build before building? (pub cache clean, rm lockfile, pub get)',
+      choices: choices,
+      displayItem: (choice) {
+        return choice
+            ? 'Yes (clean cache, delete pubspec.lock & run pub get)'
+            : 'No (incremental build, faster)';
+      },
+      defaultIndex: 0,
+    );
+  }
+
   /// Prompts user to select a tunnel provider from available discovered options.
   static TunnelProvider selectTunnelProvider(List<TunnelProvider> availableProviders) {
     if (availableProviders.length <= 1) return TunnelProvider.none;

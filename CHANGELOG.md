@@ -1,3 +1,14 @@
+## 0.7.4
+
+- Added Clean Build prompt option for Flutter builds (`Prompts.selectCleanBuild()`).
+- Added `--clean` / `-c` CLI flag for non-interactive/scripting mode.
+- Implemented full clean build command sequence in `BuildManager`:
+  1. `flutter pub cache clean --force`
+  2. `flutter clean`
+  3. Deletes `pubspec.lock`
+  4. `flutter pub get`
+- Added single-line animated terminal spinner (`Performing Flutter Clean Build...`) and live Web console log streaming (`[CLEAN] ...`) during cleanup sequence execution.
+
 ## 0.7.3
 
 - Disabled automatic browser launching on build start by default. Added `--open-browser` (`-b`) CLI flag to manually opt-in to auto-opening the browser dashboard.

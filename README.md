@@ -18,6 +18,7 @@ With FLANB, you can automatically detect project types, select flavors, entry po
 - 🌐 **Public HTTPS Tunnel Integration**: Tunnel local HTTP servers using `cloudflared`, `ngrok`, `localtunnel` (`lt`), or `localhost.run` (`ssh`), with automatic fail-safe fallback to Local LAN Server.
 - 📱 **Terminal ANSI & Web SVG QR Codes**: Generates UTF-8 block QR codes directly in your terminal and vector SVG QR codes in the web dashboard resolving to your primary Wi-Fi IP for instant mobile downloads.
 - 📦 **Custom File Sharing Mode (`flanb --file`)**: Share any custom file (APKs, PDFs, ZIPs, videos, images) from any directory on your computer over Wi-Fi and HTTPS tunnels.
+- 🧹 **Flutter Clean Build Option (`flanb --clean` / `-c`)**: Perform full cache and lockfile cleanup (`flutter pub cache clean --force`, `flutter clean`, delete `pubspec.lock`, `flutter pub get`) before building.
 - 🔄 **Interactive Rebuild Shortcuts**: Press **`r` / `Ctrl+r`** to instantly rebuild with the same configuration (keeping active servers and tunnels alive) or **`c`** to change configuration.
 - 🔍 **Supported Tunnels Inspector (`flanb --show-tunnels`)**: Inspect installed tunneling binaries on your machine and display one-click package manager install hints (`brew`, `npm`).
 - 🔔 **Native Web Notifications & Live SSE Console**: Real-time log streaming over Server-Sent Events (SSE) with a Super Dark web dashboard and native browser notification alerts on build completion/failure.
@@ -158,6 +159,7 @@ flanb --non-interactive --open-browser
 | `--mode` | `-m` | Build mode (`release`, `debug`, `profile`) | `release` |
 | `--port` | `-p` | Local HTTP server port | `8080` |
 | `--tunnel` | `-u` | Public HTTP tunnel (`cloudflared`, `ngrok`, `lt`, `ssh`, `none`) | `none` |
+| `--clean` | `-c` | Perform clean build (`pub cache clean`, `rm lockfile`, `pub get`) | `false` |
 | `--show-tunnels` | | List supported tunneling tools & installation status | |
 | `--open-browser` | `-b` | Automatically open the browser dashboard on start | `false` |
 | `--non-interactive` | | Skip all terminal prompts (runs with defaults) | `false` |

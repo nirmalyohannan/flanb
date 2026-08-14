@@ -24,7 +24,7 @@ import 'package:flanb/tunnel/tunnel_discovery.dart';
 import 'package:flanb/tunnel/tunnel_provider.dart';
 import 'package:flanb/tunnel/tunnel_service.dart';
 
-const String version = '0.7.3';
+const String version = '0.7.4';
 
 ArgParser buildParser() {
   return ArgParser()
@@ -59,6 +59,12 @@ ArgParser buildParser() {
       'tunnel',
       abbr: 'u',
       help: 'Tunnel local server to a public HTTPS URL (cloudflared, ngrok, lt, ssh, none).',
+    )
+    ..addFlag(
+      'clean',
+      abbr: 'c',
+      negatable: false,
+      help: 'Perform clean build (pub cache clean, flutter clean, rm lockfile, pub get) before building.',
     )
     ..addFlag(
       'show-tunnels',
@@ -344,6 +350,11 @@ Future<void> runFlutterFlow({
       selectedMode = Prompts.selectBuildMode();
     }
 
+    bool performClean = results.flag('clean');
+    if (!results.wasParsed('clean') && !nonInteractive) {
+      performClean = Prompts.selectCleanBuild();
+    }
+
     final availableTunnels = await TunnelDiscovery.discoverAvailable();
     TunnelProvider selectedTunnel;
 
@@ -367,6 +378,7 @@ Future<void> runFlutterFlow({
     print('  Flavor:     ${config.flavor ?? 'default (none)'}');
     print('  Entrypoint: ${config.entryPoint}');
     print('  Mode:       ${config.mode.name}');
+    print('  Clean Build:${performClean ? ' Yes (cache clean, rm lockfile, pub get)' : ' No (incremental)'}');
     print('  Tunnel:     ${selectedTunnel.displayName}\n');
 
     final logManager = LogManager();
@@ -428,6 +440,17 @@ Future<void> runFlutterFlow({
     while (true) {
       if (!isFirstBuild) {
         logManager.addLog('\n--- REBUILDING FLUTTER APK ---');
+      }
+
+      if (performClean) {
+        final cleanSpinner = TerminalSpinner(
+          message: 'Performing Flutter Clean Build (pub cache clean, rm lockfile, pub get)...',
+        );
+        cleanSpinner.start();
+        await buildManager.performCleanBuild(onLog: (line) {
+          logManager.addLog(line);
+        });
+        cleanSpinner.stop();
       }
 
       final buildStartTime = DateTime.now();
